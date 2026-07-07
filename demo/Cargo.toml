@@ -1,0 +1,57 @@
+[package]
+name = "dioxus-clerk-demo"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+dioxus-clerk = { path = ".." }
+
+axum = { version = "0.8", default-features = false, features = ["json"], optional = true }
+dioxus = { version = "0.7", default-features = false, features = ["asset", "document", "html", "hooks", "macro", "router", "signals"] }
+# Compile-time syntax highlighting for the on-page source snippets. The `code!`
+# macro embeds a pre-highlighted span tree at build time (no runtime
+# highlighter), so it adds no meaningful weight to the size-tuned wasm bundle.
+# Only pulled into the web/server builds; the Worker library build never renders
+# pages, so it is left out of the `worker` feature.
+dioxus-code = { version = "0.1.2", optional = true }
+dioxus-server = { version = "0.7", optional = true }
+gloo-net = { version = "0.6", optional = true }
+serde_json = { version = "1", optional = true }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"], optional = true }
+tower-service = { version = "0.3", optional = true }
+worker = { version = "0.8", features = ["http", "axum"], optional = true }
+worker-macros = { version = "0.8", features = ["http"], optional = true }
+
+[features]
+default = []
+web = ["dioxus/launch", "dioxus/web", "dep:gloo-net", "dep:dioxus-code"]
+fullstack-web = ["web", "dioxus/fullstack"]
+server = [
+    "dioxus/fullstack",
+    "dioxus/server",
+    "dioxus-clerk/server",
+    "dep:dioxus-server",
+    "dep:axum",
+    "dep:dioxus-code",
+    "dep:tokio",
+]
+worker = [
+    "dioxus-clerk/worker",
+    "dep:axum",
+    "dep:worker",
+    "dep:worker-macros",
+    "dep:tower-service",
+    "dep:serde_json",
+]
+
+[profile.release]
+opt-level = "z"
+debug = false
+lto = true
+codegen-units = 1
+panic = "abort"
+incremental = false

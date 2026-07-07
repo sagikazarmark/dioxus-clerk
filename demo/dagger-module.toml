@@ -1,0 +1,24 @@
+name = "demo"
+engineVersion = "v1.0.0"
+runtime.source = "dang"
+include = ["!.wrangler", "!build", "!dist", "!node_modules", "!target", "!.devenv"]
+
+[[dependencies]]
+name = "wrangler"
+source = "github.com/sagikazarmark/daggerverse-beta/wrangler"
+
+[[dependencies]]
+name = "dioxus"
+source = "github.com/sagikazarmark/daggerverse-beta/dioxus"
+
+[[dependencies]]
+name = "worker-build"
+source = "github.com/sagikazarmark/daggerverse-beta/worker-build"
+
+[[dependencies]]
+name = "overlays"
+source = "github.com/sagikazarmark/daggerverse-beta/overlays"
+
+[[dependencies]]
+name = "javascript-environment"
+source = "github.com/sagikazarmark/daggerverse-beta/javascript-environment"

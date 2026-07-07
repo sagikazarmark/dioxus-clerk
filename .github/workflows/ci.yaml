@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  DAGGER_VERSION: 86d1d2f5791bcf3213d56903cfa81a3ba0abe54a
+
+jobs:
+  checks:
+    name: Checks (${{ matrix.workspace }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        workspace: [".", "demo"]
+
+    defaults:
+      run:
+        working-directory: ${{ matrix.workspace }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Check
+        uses: dagger/dagger-for-github@27b130bf0f79a7f6fbbbe0fbca6760dc9bb40a77 # v8.4.1
+        with:
+          verb: check
+          args: --lock pinned
+          # version: ${{ env.DAGGER_VERSION }}
+          commit: ${{ env.DAGGER_VERSION }}

@@ -1,0 +1,10 @@
+[application]
+name = "dioxus-clerk-demo"
+default_platform = "fullstack"
+
+[web.app]
+title = "dioxus-clerk demo"
+
+[web.wasm_opt]
+level = "z"
+debug = false

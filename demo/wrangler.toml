@@ -1,0 +1,18 @@
+name = "dioxus-clerk-demo"
+main = "dist/worker/index.js"
+compatibility_date = "2026-05-30"
+
+send_metrics = false
+workers_dev = true
+
+[observability]
+enabled = true
+
+# [build]
+# command = "npm run build && dx bundle --web --fullstack false --release --out-dir dist && worker-build --release -- --no-default-features --features worker"
+
+[assets]
+binding = "ASSETS"
+directory = "dist/public"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]

@@ -1,0 +1,15 @@
+{
+  "name": "dioxus-clerk-demo",
+  "private": true,
+  "scripts": {
+    "build": "tailwindcss -i ./style.css -o ./assets/style.css --minify",
+    "watch": "tailwindcss -i ./style.css -o ./assets/style.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3",
+    "tailwindcss": "^4.3",
+    "daisyui": "^5.5",
+    "wrangler": "^4",
+    "@types/node": "^25.9.1"
+  }
+}

@@ -1,0 +1,136 @@
+type Demo {
+  let envFile: File
+  let jsEnv: JavascriptEnvironment!
+  let dioxus: Dioxus!
+  let workerBuild: WorkerBuild!
+
+  new(ws: Workspace!) {
+    let envFile: File = ws.findUp(".env").{ if (_ != null) ws.file(_) }
+    let rustVersion = "1.96-trixie"
+
+    # Shared base container: the official Rust image plus clang. clang is needed
+    # to cross-compile the C sysroot pulled in by the `dioxus-code` snippet
+    # highlighter (arborium/tree-sitter) for the wasm32 target. Both the Dioxus
+    # and worker-build toolchains build on top of this same container so they
+    # share one environment.
+    let rustContainer = Dagger
+      .container
+      .from("rust:" + rustVersion)
+      .withMountedCache("/var/cache/apt/archives", Dagger.cacheVolume("debian-apt-archives"))
+      # .withMountedCache("/var/lib/apt/lists", Dagger.cacheVolume("debian-apt-lists"))
+      .withEnvVariable("DEBIAN_FRONTEND", "noninteractive")
+      .withExec(["apt-get", "update"])
+      .withExec(["apt-get", "install", "-y", "--no-install-recommends"] + ["clang"])
+
+    # TODO: lock js env version? Use bun directly?
+    self.jsEnv = Dagger.javascriptEnvironment(install: true, locked: true)
+    self.dioxus = Dagger.dioxus(container: rustContainer, envFile: envFile)
+    self.workerBuild = Dagger.workerBuild(container: rustContainer, envFile: envFile)
+    self.envFile = envFile
+
+    self
+  }
+
+  let withAssets(ws: Workspace!): Workspace! {
+    let assets = self.jsEnv.withRun(ws, "build").directory("assets")
+
+    # TODO: need better way to pass module outputs to other modules
+    let dir = ws
+      .directory("/", gitignore: true)
+      .withDirectory(ws.cwd + "/assets", assets)
+
+    # assets is normally ignored by git
+    # so adding it back causes it to be ignored next time workspace is called
+    dir = dir
+      .withFile(
+        "demo/.gitignore",
+        dir.file("demo/.gitignore").withReplaced("/assets/", ""),
+      )
+
+    dir.asWorkspace(ws.cwd)
+  }
+
+  """
+  Build the Dioxus demo application.
+  """
+  build(ws: Workspace!): Directory! @check {
+    self
+      .dioxus
+      .bundle(
+        self.withAssets(ws),
+        fullstack: true,
+        release: true,
+        debugSymbols: false,
+        clientArgs: ["--features", "fullstack-web"],
+      )
+  }
+
+  """
+  Run the Dioxus demo application.
+  """
+  serve(ws: Workspace!): Service! {
+    # Mirror `build`: serve the native fullstack app so Dioxus server functions
+    # and the custom /api routes work. The client half must use the
+    # `fullstack-web` feature (the plain `web` feature is the Cloudflare-SPA
+    # client, whose backend calls target the Worker, not local server fns).
+    self.dioxus.serve(
+      self.withAssets(ws),
+      fullstack: true,
+      clientArgs: ["--features", "fullstack-web"],
+    )
+  }
+
+  """
+  Cloudflare Worker operations.
+  """
+  worker: Worker! {
+    Worker(self)
+  }
+}
+
+type Worker {
+  let parent: Demo!
+
+  """
+  Builds the Cloudflare Worker bundle.
+  """
+  build(ws: Workspace!): Directory! @check {
+    let client = parent
+      .dioxus
+      .bundle(
+        parent.withAssets(ws),
+        fullstack: false,
+        release: true,
+        debugSymbols: false,
+        platform: DioxusPlatform.WEB,
+      )
+
+    let server = parent
+      .workerBuild
+      .build(ws, args: ["--no-default-features", "--features", "worker"])
+
+    Dagger
+      .directory
+      .withDirectory("dist", client)
+      .withDirectory("dist/worker", server)
+      .withFile("wrangler.toml", ws.file("wrangler.toml"))
+  }
+
+  """
+  Runs the Cloudflare Worker locally using `wrangler dev`.
+  """
+  dev(ws: Workspace!): Service! {
+    let envFile = parent.envFile
+    if (envFile == null) {
+      raise "envFile is missing"
+    }
+
+    Dagger.wrangler.dev(build(ws).withFile(".dev.vars", envFile))
+  }
+
+  deploy(ws: Workspace!): Void @cache(policy: FunctionCachePolicy.Never) {
+    wrangler.deploy(build(ws)).sync
+
+    null
+  }
+}
