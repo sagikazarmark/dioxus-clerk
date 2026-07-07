@@ -1,11 +1,7 @@
 //! Server verification outcome implementation.
 //!
 //! Converts request credentials into the canonical `VerificationOutcome` used
-//! by the tower layer, server-function context reader, and SSR initial state path. See
-//! `docs/adr/0001-server-verification-outcome-semantics.md` for the
-//! fail-open and fail-closed policy decision, and
-//! `docs/adr/0002-server-verifier-dependency-and-feature-split.md` for the
-//! verifier dependency decision.
+//! by the tower layer, server-function context reader, and SSR initial state path.
 
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -299,7 +295,7 @@ fn verified_request_from_outcome(
     mut req: Request<Body>,
     outcome: VerificationOutcome,
 ) -> VerifiedRequest {
-    // ADR 0001: Unavailable is the one outcome that fails closed.
+    // Unavailable is the one outcome that fails closed.
     if matches!(outcome, VerificationOutcome::Unavailable) {
         return VerifiedRequest::Unavailable(unavailable_response());
     }

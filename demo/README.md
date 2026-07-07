@@ -1,6 +1,6 @@
 # demo
 
-A single deployable Dioxus app that showcases the library **feature by feature** and doubles as a docs-by-example gallery. Every page mounts a real component next to the exact source that produced it, so the snippet you read is the code that runs (see [ADR 0001](docs/adr/0001-examples-as-snippet-source.md)). All pages share one `ClerkProvider`, one router layout, and one Tailwind/DaisyUI setup.
+A single deployable Dioxus app that showcases the library **feature by feature** and doubles as a docs-by-example gallery. Every page mounts a real component next to the exact source that produced it, so the snippet you read is the code that runs. All pages share one `ClerkProvider`, one router layout, and one Tailwind/DaisyUI setup.
 
 The demo has two supported server modes:
 

@@ -48,7 +48,7 @@ impl RequestCredentials {
             Self::SessionCookies(tokens) => {
                 // Any valid cookie wins. Otherwise `Unavailable` outranks
                 // `Invalid` regardless of cookie order: a candidate that could
-                // not be checked must fail closed (ADR 0001), not demote the
+                // not be checked must fail closed, not demote the
                 // request to anonymous.
                 let mut failure = None;
                 for token in &tokens {

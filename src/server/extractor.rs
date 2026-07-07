@@ -72,7 +72,7 @@ where
 ///
 /// A missing or invalid credential yields `Ok(None)` (the anonymous case an
 /// optional extractor exists to model), but a JWKS/verification outage yields
-/// `Err(AuthRejection::Unavailable)` → 503 rather than `None`. Per ADR 0001,
+/// `Err(AuthRejection::Unavailable)` → 503 rather than `None`.
 /// `Unavailable` must never be silently downgraded to anonymous: doing so would
 /// let a Clerk outage quietly strip a signed-in user of their auth. So an
 /// otherwise-public route using `Option<ClerkAuth>` will 503 during an outage.
