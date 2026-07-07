@@ -8,14 +8,14 @@
 
   env.CC_wasm32_unknown_unknown = "${pkgs.llvmPackages.clang-unwrapped}/bin/clang";
 
-  packages = [
-    pkgs.lld
-    pkgs.wasm-pack
-  ]
-  ++ lib.optionals pkgs.stdenv.isLinux [
-    # Needed by `wasm-pack test --chrome --headless`.
-    pkgs.chromium
-    pkgs.chromedriver
+  packages = with pkgs; [
+    lld
+    cargo-audit
+    cargo-deny
+    cargo-dist
+    cargo-release
+    cargo-watch
+    wasm-pack
   ];
 
   languages = {
