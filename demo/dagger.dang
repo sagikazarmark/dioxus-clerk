@@ -128,8 +128,15 @@ type Worker {
     Dagger.wrangler.dev(build(ws).withFile(".dev.vars", envFile))
   }
 
-  deploy(ws: Workspace!): Void @cache(policy: FunctionCachePolicy.Never) {
-    Dagger.wrangler.deploy(build(ws)).sync
+  deploy(
+    ws: Workspace!,
+    cloudflareAccountId: String,
+    cloudflareApiToken: Secret,
+  ): Void @cache(policy: FunctionCachePolicy.Never) {
+    Dagger
+      .wrangler(accountId: cloudflareAccountId, apiToken: cloudflareApiToken)
+      .deploy(build(ws))
+      .sync
 
     null
   }
