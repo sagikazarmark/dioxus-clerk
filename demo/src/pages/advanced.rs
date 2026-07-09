@@ -8,7 +8,7 @@ use crate::examples::hooks::HooksExample;
 use crate::examples::imperative::ImperativeExample;
 use crate::examples::reverification::ReverificationExample;
 use crate::examples::session_tasks::SessionTasksExample;
-use crate::ui::{snippet_theme, CheckingAuthPanel, DocLink, ExampleSection, PageHeader};
+use crate::ui::{snippet_theme, CheckingAuthPanel, DocLink, ExampleSection, InlineCode, PageHeader};
 
 #[component]
 pub fn Gating() -> Element {
@@ -20,7 +20,11 @@ pub fn Gating() -> Element {
         }
         ExampleSection {
             title: "Gates, control components, Protect, and redirects",
-            intro: "The *WhenLoaded gates render a fallback until clerk-js loads, preventing a signed-out flash during hydration. The redirect components navigate away, so here they are behind buttons.",
+            intro: rsx! {
+                "The "
+                InlineCode { "*WhenLoaded" }
+                " gates render a fallback until clerk-js loads, preventing a signed-out flash during hydration. The redirect components navigate away, so here they are behind buttons."
+            },
             demo: rsx! { GatingExample {} },
             code: rsx! { Code { src: code!("src/examples/gating.rs"), theme: snippet_theme() } },
         }
@@ -37,7 +41,27 @@ pub fn SessionTasks() -> Element {
         }
         ExampleSection {
             title: "treat_pending_as_signed_out, current_task, and <TaskSetupMFA>",
-            intro: "Opt a subtree in to pending sessions with treat_pending_as_signed_out: false (on SignedIn/SignedOut/Protect, or use_auth), read the task from use_session().session().current_task, and mount TaskSetupMFA, or pass task_urls to ClerkProvider to let clerk-js route pending users automatically.",
+            intro: rsx! {
+                "Opt a subtree in to pending sessions with "
+                InlineCode { "treat_pending_as_signed_out: false" }
+                " (on "
+                InlineCode { "SignedIn" }
+                "/"
+                InlineCode { "SignedOut" }
+                "/"
+                InlineCode { "Protect" }
+                ", or "
+                InlineCode { "use_auth" }
+                "), read the task from "
+                InlineCode { "use_session().session().current_task" }
+                ", and mount "
+                InlineCode { "TaskSetupMFA" }
+                ", or pass "
+                InlineCode { "task_urls" }
+                " to "
+                InlineCode { "ClerkProvider" }
+                " to let clerk-js route pending users automatically."
+            },
             demo: rsx! { SessionTasksExample {} },
             code: rsx! { Code { src: code!("src/examples/session_tasks.rs"), theme: snippet_theme() } },
         }
@@ -59,7 +83,16 @@ pub fn Reverification() -> Element {
         }
         ExampleSection {
             title: "use_reverification().guard(...)",
-            intro: "guard runs the action; if it returns ClerkError::NeedsReverification, clerk-js opens the reverification prompt and the action retries on success (or returns ReverificationCancelled). A real server maps its 403 hint with ClerkError::from_reverification_hint.",
+            intro: rsx! {
+                InlineCode { "guard" }
+                " runs the action; if it returns "
+                InlineCode { "ClerkError::NeedsReverification" }
+                ", clerk-js opens the reverification prompt and the action retries on success (or returns "
+                InlineCode { "ReverificationCancelled" }
+                "). A real server maps its 403 hint with "
+                InlineCode { "ClerkError::from_reverification_hint" }
+                "."
+            },
             demo: rsx! { ReverificationExample {} },
             code: rsx! { Code { src: code!("src/examples/reverification.rs"), theme: snippet_theme() } },
         }
@@ -87,7 +120,14 @@ pub fn Hooks() -> Element {
             }
             ExampleSection {
                 title: "use_auth / use_user / use_session",
-                intro: "use_auth resolves auth facts immediately; use_user and use_session fill in the full clerk-js User and Session once the browser hydrates.",
+                intro: rsx! {
+                    InlineCode { "use_auth" }
+                    " resolves auth facts immediately; "
+                    InlineCode { "use_user" }
+                    " and "
+                    InlineCode { "use_session" }
+                    " fill in the full clerk-js User and Session once the browser hydrates."
+                },
                 demo: rsx! { HooksExample {} },
                 code: rsx! { Code { src: code!("src/examples/hooks.rs"), theme: snippet_theme() } },
             }
@@ -105,7 +145,13 @@ pub fn Imperative() -> Element {
         }
         ExampleSection {
             title: "use_clerk() and try_* variants",
-            intro: "Fire-and-forget actions wait for clerk-js to load and surface failures through use_clerk_error. The awaited try_sign_out() hands the outcome back to the caller.",
+            intro: rsx! {
+                "Fire-and-forget actions wait for clerk-js to load and surface failures through "
+                InlineCode { "use_clerk_error" }
+                ". The awaited "
+                InlineCode { "try_sign_out()" }
+                " hands the outcome back to the caller."
+            },
             demo: rsx! { ImperativeExample {} },
             code: rsx! { Code { src: code!("src/examples/imperative.rs"), theme: snippet_theme() } },
         }
@@ -122,7 +168,9 @@ pub fn Errors() -> Element {
         }
         ExampleSection {
             title: "use_clerk_error and use_clear_clerk_error",
-            intro: "There is usually no error to show. Trigger one by, say, opening a modal before clerk-js is configured, and it will appear here with a dismiss button.",
+            intro: rsx! {
+                "There is usually no error to show. Trigger one by, say, opening a modal before clerk-js is configured, and it will appear here with a dismiss button."
+            },
             demo: rsx! { ErrorsExample {} },
             code: rsx! { Code { src: code!("src/examples/errors.rs"), theme: snippet_theme() } },
         }

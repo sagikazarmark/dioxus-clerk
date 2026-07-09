@@ -30,27 +30,61 @@ pub fn PageHeader(
     }
 }
 
+/// Inline monospace styling for a component or API name mentioned in prose
+/// (e.g. `InlineCode { "OrganizationSwitcher" }`). Keeps the styling in one
+/// place so every reference reads the same.
+#[component]
+pub fn InlineCode(children: Element) -> Element {
+    rsx! {
+        code { class: "rounded bg-base-200 px-1.5 py-0.5 font-mono text-[0.85em] text-base-content/80",
+            {children}
+        }
+    }
+}
+
 /// A single documented example: a heading, a short explanation, the live
 /// component, and the exact source that produced it.
 ///
 /// `demo` is the live render; `code` is expected to be a `dioxus_code::Code`
-/// block (this component supplies the surrounding card chrome).
+/// block (this component supplies the surrounding card chrome). `intro` is an
+/// `Element` so it can carry inline [`InlineCode`] and links.
+///
+/// By default the live demo and its source sit side by side. Set `stacked` for
+/// embedded surfaces (a full `UserProfile`, `SignIn`, etc.) whose natural width
+/// overflows a half-width column: the source then drops below a full-width live
+/// demo instead of fighting it for horizontal space.
 #[component]
 pub fn ExampleSection(
     #[props(into)] title: String,
-    #[props(into)] intro: String,
+    intro: Element,
     demo: Element,
     code: Element,
+    #[props(default = false)] stacked: bool,
 ) -> Element {
+    // Stacked lays the demo and source out in a single full-width column;
+    // side-by-side keeps them in a two-column grid on large screens.
+    let layout_class = if stacked {
+        "mt-6 grid grid-cols-1 gap-6"
+    } else {
+        "mt-6 grid gap-6 lg:grid-cols-2"
+    };
+    // A full-width embedded widget can still exceed a narrow viewport, so let
+    // the live box scroll on its own rather than push the page. Triggers keep a
+    // clip-free box so their dropdowns are never cut off.
+    let live_class = if stacked {
+        "overflow-x-auto rounded-2xl border border-base-300 bg-base-200/40 p-5"
+    } else {
+        "rounded-2xl border border-base-300 bg-base-200/40 p-5"
+    };
     rsx! {
         section { class: "mt-10 rounded-[2rem] border border-base-300 bg-base-100 p-6 shadow-sm sm:p-8",
             h2 { class: "text-xl font-semibold tracking-tight", "{title}" }
-            p { class: "mt-2 max-w-[70ch] text-sm leading-6 text-base-content/65", "{intro}" }
-            div { class: "mt-6 grid gap-6 lg:grid-cols-2",
+            p { class: "mt-2 max-w-[70ch] text-sm leading-6 text-base-content/65", {intro} }
+            div { class: "{layout_class}",
                 // Live column.
                 div {
                     p { class: "mb-3 text-xs font-semibold uppercase tracking-wider text-base-content/45", "Live" }
-                    div { class: "rounded-2xl border border-base-300 bg-base-200/40 p-5", {demo} }
+                    div { class: "{live_class}", {demo} }
                 }
                 // Source column.
                 div {
