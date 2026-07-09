@@ -6,12 +6,14 @@
 
 mod advanced;
 mod basics;
+mod legal;
 mod orgs;
 mod server;
 mod widgets;
 
 pub use advanced::{Errors, Gating, Hooks, Imperative, Reverification, SessionTasks};
 pub use basics::{Buttons, Home, Minimal};
+pub use legal::{PrivacyPolicy, TermsOfService};
 pub use orgs::{Organizations, WaitlistPage};
 pub use server::ServerDemo;
 pub use widgets::{ProfilePage, SignInCallbackPage, SignInPage, SignUpCallbackPage, SignUpPage};

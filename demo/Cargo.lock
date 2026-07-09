@@ -359,7 +359,6 @@ dependencies = [
  "axum",
  "axum-core",
  "bytes",
- "cookie",
  "futures-util",
  "headers",
  "http",
@@ -372,6 +371,26 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
+]
+
+[[package]]
+name = "axum-extra"
+version = "0.12.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be44683b41ccb9ab2d23a5230015c9c3c55be97a25e4428366de8873103f7970"
+dependencies = [
+ "axum-core",
+ "bytes",
+ "cookie",
+ "futures-core",
+ "futures-util",
+ "http",
+ "http-body",
+ "http-body-util",
+ "mime",
+ "pin-project-lite",
+ "tower-layer",
+ "tower-service",
 ]
 
 [[package]]
@@ -1084,12 +1103,12 @@ name = "dioxus-clerk"
 version = "0.1.0"
 dependencies = [
  "axum",
- "axum-extra",
+ "axum-extra 0.12.6",
  "ct-codecs",
  "dioxus",
  "dioxus-fullstack-core",
  "futures-util",
- "gloo-timers",
+ "gloo-timers 0.4.0",
  "js-sys",
  "jwk-simple",
  "jwt-simple",
@@ -1278,7 +1297,7 @@ dependencies = [
  "async-tungstenite",
  "axum",
  "axum-core",
- "axum-extra",
+ "axum-extra 0.10.3",
  "base64",
  "bytes",
  "ciborium",
@@ -1676,7 +1695,7 @@ dependencies = [
  "futures-channel",
  "futures-util",
  "generational-box",
- "gloo-timers",
+ "gloo-timers 0.3.0",
  "js-sys",
  "lazy-js-bundle",
  "rustc-hash 2.1.2",
@@ -2066,6 +2085,18 @@ name = "gloo-timers"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbb143cf96099802033e0d4f4963b19fd2e0b728bcf076cd9cf7f6634f092994"
+dependencies = [
+ "futures-channel",
+ "futures-core",
+ "js-sys",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "gloo-timers"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "482ce8a491a501da4cd806bd190275363d674f2845005c6ddbd5d3e1dd54495d"
 dependencies = [
  "futures-channel",
  "futures-core",

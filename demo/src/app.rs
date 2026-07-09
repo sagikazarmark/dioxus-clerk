@@ -47,6 +47,10 @@ pub enum Route {
     Errors {},
     #[route("/server")]
     ServerDemo {},
+    #[route("/privacy")]
+    PrivacyPolicy {},
+    #[route("/terms")]
+    TermsOfService {},
 }
 
 /// Grouped navigation shared by the desktop sidebar and the mobile strip.
@@ -118,6 +122,22 @@ fn ClerkLayout() -> Element {
                         ErrorBanner {}
                         Outlet::<Route> {}
                     }
+                }
+                Footer {}
+            }
+        }
+    }
+}
+
+#[component]
+fn Footer() -> Element {
+    rsx! {
+        footer { class: "mt-8 border-t border-base-300",
+            div { class: "mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-3 px-4 py-6 text-sm text-base-content/55 sm:flex-row sm:px-6",
+                span { "A demo for the dioxus-clerk library." }
+                div { class: "flex items-center gap-4",
+                    Link { to: Route::PrivacyPolicy {}, class: "hover:text-base-content", "Privacy" }
+                    Link { to: Route::TermsOfService {}, class: "hover:text-base-content", "Terms" }
                 }
             }
         }
