@@ -149,7 +149,7 @@ fn Header() -> Element {
                                 "Sign in"
                             }
                         },
-                        SignInButton { class: "btn btn-primary btn-sm shadow-sm", "Sign in" }
+                        SignInButton { mode: AuthButtonMode::Modal, class: "btn btn-primary btn-sm shadow-sm", "Sign in" }
                         Link { to: Route::SignUpPage {}, class: "btn btn-ghost btn-sm hidden sm:inline-flex", "Sign up" }
                     }
                     SignedIn {
