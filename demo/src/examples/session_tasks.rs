@@ -1,6 +1,8 @@
 use dioxus::prelude::*;
 use dioxus_clerk::*;
 
+use crate::ui::Spinner;
+
 /// clerk-js v6 after-auth *session tasks* (forced MFA enrollment, organization
 /// selection, …) must be completed before a session is fully active. Such a
 /// session is *pending*: by default it gates as signed-out, so `SignedIn` /
@@ -42,11 +44,7 @@ fn PendingTask() -> Element {
                 TaskSetupMFA {
                     redirect_url_complete: "/hooks",
                     class: "mx-auto max-w-md",
-                    fallback: rsx! {
-                        div { class: "grid min-h-64 place-items-center",
-                            span { class: "loading loading-spinner loading-md text-primary" }
-                        }
-                    },
+                    fallback: rsx! { Spinner {} },
                 }
             },
             Some(key) => rsx! {

@@ -116,6 +116,44 @@ pub fn DocLink(#[props(into)] href: String, children: Element) -> Element {
     }
 }
 
+/// Compact centered spinner for a mounting Clerk widget. Pass it as a widget's
+/// `fallback` so the example bodies don't each repeat the same markup.
+#[component]
+pub fn Spinner() -> Element {
+    rsx! {
+        div { class: "grid min-h-64 place-items-center",
+            span { class: "loading loading-spinner loading-md text-primary" }
+        }
+    }
+}
+
+/// Muted one-line status/result readout for the imperative examples. Renders
+/// nothing while `status` is empty, so callers can mount it unconditionally and
+/// keep the interesting logic (the action, not the display) in view.
+#[component]
+pub fn StatusLine(status: ReadSignal<String>) -> Element {
+    if status.read().is_empty() {
+        return rsx! {};
+    }
+    rsx! {
+        p { class: "mt-3 text-sm text-base-content/70", "{status}" }
+    }
+}
+
+/// Key/value readout rendered as a definition grid. Lets state-inspection
+/// examples list the fields they read without repeating the grid markup.
+#[component]
+pub fn StateGrid(rows: Vec<(&'static str, String)>) -> Element {
+    rsx! {
+        dl { class: "grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 font-mono text-sm",
+            for (label , value) in rows {
+                dt { class: "text-base-content/55", "{label}" }
+                dd { class: "break-all", "{value}" }
+            }
+        }
+    }
+}
+
 /// Placeholder shown while a Clerk-hosted widget mounts.
 #[component]
 pub fn WidgetFallback(#[props(into)] label: String) -> Element {

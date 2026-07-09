@@ -1,6 +1,8 @@
 use dioxus::prelude::*;
 use dioxus_clerk::*;
 
+use crate::ui::StatusLine;
+
 /// Drive Clerk from your own elements.
 ///
 /// `use_clerk()` returns fire-and-forget actions (open/close modals, redirect,
@@ -41,8 +43,6 @@ pub fn ImperativeExample() -> Element {
                 }
             }
         }
-        if !status.read().is_empty() {
-            p { class: "mt-3 text-sm text-base-content/70", "{status}" }
-        }
+        StatusLine { status }
     }
 }

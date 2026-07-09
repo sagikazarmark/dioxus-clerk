@@ -1,6 +1,8 @@
 use dioxus::prelude::*;
 use dioxus_clerk::*;
 
+use crate::ui::StateGrid;
+
 /// The reactive hooks.
 ///
 /// `use_auth` exposes resolved auth facts (ids, org role/permissions, helpers
@@ -21,17 +23,14 @@ pub fn HooksExample() -> Element {
     let org_role = state.org_role().unwrap_or_default().to_string();
 
     rsx! {
-        dl { class: "grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 font-mono text-sm",
-            dt { class: "text-base-content/55", "is_loaded" }
-            dd { "{is_loaded}" }
-            dt { class: "text-base-content/55", "status" }
-            dd { "{status:?}" }
-            dt { class: "text-base-content/55", "is_signed_in" }
-            dd { "{is_signed_in}" }
-            dt { class: "text-base-content/55", "user_id" }
-            dd { class: "break-all", "{user_id}" }
-            dt { class: "text-base-content/55", "org_role" }
-            dd { "{org_role}" }
+        StateGrid {
+            rows: vec![
+                ("is_loaded", format!("{is_loaded}")),
+                ("status", format!("{status:?}")),
+                ("is_signed_in", format!("{is_signed_in}")),
+                ("user_id", user_id),
+                ("org_role", org_role),
+            ],
         }
         if let Some(user) = user.user() {
             p { class: "mt-4 text-sm",
