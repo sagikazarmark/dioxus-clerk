@@ -1,4 +1,4 @@
-//! Small, focused example components — one per feature area.
+//! Small, focused example components: one per feature area.
 //!
 //! Each component keeps the `dioxus_clerk` API front and center; purely
 //! presentational bits (spinners, status lines, state readouts) are delegated

@@ -8,7 +8,7 @@
 //! `Parts`, constructs a `FullstackContext::new(parts)`, then runs the
 //! handler future inside `ctx.scope(...)` so the task-local
 //! `FULLSTACK_CONTEXT` is set. `ctx.extension::<T>()` then reads from
-//! `parts.extensions` — which is exactly where `ClerkAuthLayer` deposits
+//! `parts.extensions`, which is exactly where `ClerkAuthLayer` deposits
 //! the auth.
 //!
 //! The plan's original test design wires a plain axum handler directly,
@@ -364,7 +364,7 @@ async fn current_auth_opt_returns_none_when_extension_absent() {
 
 #[tokio::test]
 async fn current_auth_errors_outside_fullstack_scope() {
-    // No FullstackContext on the task-local — this is the "called outside
+    // No FullstackContext on the task-local: this is the "called outside
     // a server function" case. `current_auth` should return
     // `Err(NoServerContext)` and `current_auth_opt` likewise.
     let from_err = current_auth().expect_err("must error");

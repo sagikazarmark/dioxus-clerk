@@ -7,7 +7,7 @@ use crate::ui::StateGrid;
 ///
 /// `use_auth` exposes resolved auth facts (ids, org role/permissions, helpers
 /// like `has_role`). `use_user` and `use_session` add the full clerk-js `User`
-/// and `Session` once the browser has hydrated them — `None` until then, even
+/// and `Session` once the browser has hydrated them; `None` until then, even
 /// while `use_auth` already reports signed-in from a server snapshot.
 #[component]
 pub fn HooksExample() -> Element {

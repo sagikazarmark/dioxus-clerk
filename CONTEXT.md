@@ -10,8 +10,8 @@ and coordinating Clerk-mounted UI.
 
 ### Clerk action dispatch
 
-The coordination of application-requested clerk-js browser actions — opening
-and closing Clerk UI, signing out, redirecting — with the Clerk lifecycle. An
+The coordination of application-requested clerk-js browser actions (opening
+and closing Clerk UI, signing out, redirecting) with the Clerk lifecycle. An
 action never touches clerk-js before the lifecycle reports loaded.
 Fire-and-forget actions run in request order and surface failures through the
 provider's error reporting; awaited actions report their outcome directly to

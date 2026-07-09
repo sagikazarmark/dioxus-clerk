@@ -134,7 +134,7 @@ pub fn ClerkProvider(
     /// `routerPush` for SPA-native navigation.
     ///
     /// Read at the page's single `Clerk.load()`: clerk-js loads once per
-    /// page, so a remounted provider cannot add or remove router callbacks —
+    /// page, so a remounted provider cannot add or remove router callbacks;
     /// pass them on the provider that first loads clerk-js.
     #[props(into)]
     router_push: Option<Callback<String>>,

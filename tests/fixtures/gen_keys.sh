@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Regenerate the RSA-2048 keypair + JWKS used by tests/layer.rs.
 # Outputs (committed alongside this script):
-#   test_priv.pem  — PKCS#1 RSA private key (PEM)
-#   test_pub.pem   — SubjectPublicKeyInfo (PEM)
-#   test_jwks.json — single-key JWKS with kid "test-kid", alg RS256
+#   test_priv.pem:  PKCS#1 RSA private key (PEM)
+#   test_pub.pem:   SubjectPublicKeyInfo (PEM)
+#   test_jwks.json: single-key JWKS with kid "test-kid", alg RS256
 #
 # Requires: openssl, python3 with the `cryptography` package.
 set -euo pipefail

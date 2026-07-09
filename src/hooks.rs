@@ -9,7 +9,7 @@ fn auth_state_signal(
     treat_pending_as_signed_out: bool,
 ) -> ReadSignal<AuthState> {
     // `treat_pending_as_signed_out` is a plain value, not a signal, so track it
-    // with `use_reactive` — otherwise a caller passing a changing flag would
+    // with `use_reactive`; otherwise a caller passing a changing flag would
     // keep reading the first render's value.
     use_memo(use_reactive(
         &treat_pending_as_signed_out,
@@ -95,7 +95,7 @@ impl UseAuth {
     /// waits for the browser Clerk lifecycle to load before reading clerk-js.
     ///
     /// Returns `Err(`[`ClerkError::Offline`]`)` when the browser is offline
-    /// (clerk-js 6 throws `ClerkOfflineError` here) — a transient condition
+    /// (clerk-js 6 throws `ClerkOfflineError` here), a transient condition
     /// callers can retry rather than treat as signed-out.
     pub async fn get_token(&self) -> Result<Option<String>, ClerkError> {
         self.get_token_with_options(serde_json::Value::Null).await
@@ -536,8 +536,8 @@ pub fn use_clerk_error() -> ReadSignal<Option<ClerkError>> {
 /// Return a callback that clears the latest recoverable error (a
 /// scheduled-action failure or a non-fatal startup configuration warning).
 ///
-/// Fatal initialization failures are terminal for the provider instance —
-/// nothing retries the load — so clearing them would only convert a visible
+/// Fatal initialization failures are terminal for the provider instance;
+/// nothing retries the load, so clearing them would only convert a visible
 /// error into a silent forever-loading state. They are therefore not cleared
 /// by this callback.
 pub fn use_clear_clerk_error() -> Callback<()> {

@@ -9,7 +9,7 @@ static SIGNED_OUT_RENDERED: AtomicBool = AtomicBool::new(false);
 static SIGNED_IN_RENDERED: AtomicBool = AtomicBool::new(false);
 
 /// A native render without server verification never verified anything, so it
-/// must seed `loading` — rendering neither `SignedIn` nor `SignedOut` — instead
+/// must seed `loading`, rendering neither `SignedIn` nor `SignedOut`, instead
 /// of flashing signed-out content at returning signed-in users.
 #[test]
 fn clerk_provider_without_server_feature_seeds_loading_auth() {

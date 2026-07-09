@@ -6,7 +6,7 @@ use crate::ui::Spinner;
 /// clerk-js v6 after-auth *session tasks* (forced MFA enrollment, organization
 /// selection, …) must be completed before a session is fully active. Such a
 /// session is *pending*: by default it gates as signed-out, so `SignedIn` /
-/// `Protect` stay hidden — matching clerk-js's `treatPendingAsSignedOut`.
+/// `Protect` stay hidden, matching clerk-js's `treatPendingAsSignedOut`.
 ///
 /// To render UI for a pending user, opt a subtree in with
 /// `treat_pending_as_signed_out: false`. Inside it, read the pending task from
@@ -24,7 +24,7 @@ pub fn SessionTasksExample() -> Element {
         // matching SignedOut. Without the flag, SignedIn would hide a pending
         // user and SignedOut would show for them.
         SignedOut { treat_pending_as_signed_out: false,
-            p { class: "text-sm text-base-content/60", "Signed out — no active or pending session." }
+            p { class: "text-sm text-base-content/60", "Signed out: no active or pending session." }
         }
         SignedIn { treat_pending_as_signed_out: false,
             PendingTask {}
@@ -48,7 +48,7 @@ fn PendingTask() -> Element {
                 }
             },
             Some(key) => rsx! {
-                p { class: "text-sm", "Pending task: {key} — route the user here to complete it." }
+                p { class: "text-sm", "Pending task: {key}, route the user here to complete it." }
             },
             None => rsx! {
                 p { class: "text-sm text-base-content/60",

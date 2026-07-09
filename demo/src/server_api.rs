@@ -6,8 +6,8 @@
 //! - a plain Axum route authenticated by an **`Authorization: Bearer`** token.
 //!
 //! The per-target `cfg` juggling lives here so the example component
-//! (`examples/server_call.rs`) can present one clean call surface —
-//! [`my_counter`] and [`who_am_i`] — across the native fullstack, static-web,
+//! (`examples/server_call.rs`) can present one clean call surface
+//! ([`my_counter`] and [`who_am_i`]) across the native fullstack, static-web,
 //! and server builds.
 
 use dioxus::prelude::*;
@@ -38,7 +38,7 @@ pub async fn my_counter() -> Result<u64, String> {
 
 /// Call the plain `/api/whoami` route with an optional `Authorization: Bearer`
 /// token and return the verified user id (or an error string). Any HTTP client
-/// could make this call — that is the point of the bearer flow.
+/// could make this call: that is the point of the bearer flow.
 #[cfg(feature = "web")]
 pub async fn who_am_i(token: Option<String>) -> Result<String, String> {
     let mut request = gloo_net::http::Request::get("/api/whoami");

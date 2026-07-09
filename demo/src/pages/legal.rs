@@ -1,4 +1,4 @@
-//! Privacy policy and terms of service. These are intentionally minimal —
+//! Privacy policy and terms of service. These are intentionally minimal:
 //! enough to satisfy the "legal links" requirement of some OAuth / provider
 //! verifications for what is only a demo application.
 

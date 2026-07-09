@@ -26,7 +26,7 @@ const JWKS_FETCH_TIMEOUT: Duration = Duration::from_secs(30);
 /// Upper bound on a JWKS response body. Real Clerk keysets are a few KiB;
 /// anything larger indicates a misconfigured endpoint and is rejected before
 /// parsing (via Content-Length up front when present, and via the buffered
-/// length otherwise — buffering stays bounded by the fetch timeout).
+/// length otherwise; buffering stays bounded by the fetch timeout).
 const JWKS_MAX_RESPONSE_BYTES: u64 = 1024 * 1024;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -141,7 +141,7 @@ impl Verifier {
         let _refresh_guard = self.inner.refresh_lock.lock().await;
 
         // Re-check after acquiring the lock: a concurrent request may have
-        // refreshed the cache — or recorded a fetch failure — while this one
+        // refreshed the cache (or recorded a fetch failure) while this one
         // waited. The failure-backoff re-check is what keeps a burst of
         // requests during an outage from serializing into one slow upstream
         // fetch each.
@@ -223,7 +223,7 @@ impl Verifier {
         // from another origin. On native, redirects are already refused
         // (`Policy::none()`), so this only re-confirms the origin. On the
         // `worker` (wasm) target, reqwest maps to the browser/Workers `fetch`,
-        // which follows 3xx with no redirect-policy control — this post-fetch
+        // which follows 3xx with no redirect-policy control: this post-fetch
         // check is the only place a cross-origin redirect can be caught there.
         if response.url().origin() != self.inner.jwks_url.origin() {
             tracing::warn!(

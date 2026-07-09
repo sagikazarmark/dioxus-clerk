@@ -21,7 +21,7 @@ const POLL_INTERVAL_MS: u32 = 50;
 /// Upper bound on `Clerk.load()` settling. Without it a never-settling load
 /// leaves no `load_error` and every awaited action waits forever.
 const LOAD_SETTLE_TIMEOUT_MS: u32 = 60_000;
-/// Upper bound on awaited actions waiting for lifecycle loadedness — a safety
+/// Upper bound on awaited actions waiting for lifecycle loadedness: a safety
 /// net over the script-appear timeout plus the load-settle timeout.
 const ACTION_WAIT_DEADLINE_MS: u32 = DEFAULT_TIMEOUT_MS + LOAD_SETTLE_TIMEOUT_MS + 5_000;
 
@@ -61,11 +61,11 @@ pub(crate) struct ClerkLifecycleSignals {
 /// Drive the full browser-side Clerk lifecycle from inside `ClerkProvider`.
 ///
 /// `publishable_key` is a plain value, matching the provider's documented
-/// read-once prop semantics — it is never written after mount.
+/// read-once prop semantics: it is never written after mount.
 ///
 /// The Clerk listener subscription is owned by the provider's scope and
 /// unsubscribes on unmount. Keeping it alive past the provider would leave a
-/// JS listener writing into dropped signals — a panic on the next Clerk event
+/// JS listener writing into dropped signals: a panic on the next Clerk event
 /// after a route-layout provider unmounts.
 pub(crate) fn use_drive_lifecycle(
     signals: ClerkLifecycleSignals,
@@ -206,7 +206,7 @@ impl Future for LoadednessWatch {
     fn poll(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Self::Output> {
         // `peek`, not `read`: this future is polled inside the caller's
         // reactive scope (e.g. a `use_resource` awaiting `get_token`), and a
-        // `read` would subscribe that scope to every auth signal write —
+        // `read` would subscribe that scope to every auth signal write,
         // re-running it on each clerk-js emission instead of only on
         // loadedness changes. LOADEDNESS_WAKERS provides the wakeups.
         if let Some(error) = self.ctx.load_error.peek().clone() {
@@ -425,7 +425,7 @@ async fn load_global_with_source(
     // `window.__internal_ClerkUICtor`. Gate on the injected tag rather than the
     // source: a live `window.Clerk` already present (external load, or a mock)
     // skips injection, and must not wait for a UI global that will never
-    // appear — a failed injection still surfaces via `script_load_error`.
+    // appear: a failed injection still surfaces via `script_load_error`.
     let need_ui = crate::loader::ui_script_injected();
     let mut waited_ms: u32 = 0;
     let bridge = loop {

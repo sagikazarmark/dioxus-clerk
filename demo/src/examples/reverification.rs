@@ -13,7 +13,7 @@ use crate::ui::StatusLine;
 /// In a real app the **server** decides: a `#[server]` action calls a protected
 /// Clerk endpoint, and maps its 403 hint with
 /// `ClerkError::from_reverification_hint`. Here the gate is simulated in the
-/// browser — the first attempt of each run "needs reverification" — so the
+/// browser: the first attempt of each run "needs reverification", so the
 /// prompt is easy to trigger without a backend.
 #[component]
 pub fn ReverificationExample() -> Element {
@@ -50,11 +50,11 @@ pub fn ReverificationExample() -> Element {
                         .await;
 
                     match outcome {
-                        Ok(result) => status.set(format!("done — {result}")),
+                        Ok(result) => status.set(format!("done: {result}")),
                         Err(ClerkError::ReverificationCancelled) => {
-                            status.set("cancelled — action did not run".to_string())
+                            status.set("cancelled: action did not run".to_string())
                         }
-                        Err(error) => status.set(format!("failed — {error}")),
+                        Err(error) => status.set(format!("failed: {error}")),
                     }
 
                     running.set(false);

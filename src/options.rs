@@ -1,7 +1,7 @@
 //! Clerk options mapping: typed option builders for Clerk JS calls.
 //!
 //! The typed builders are the single surface translating Rust-side option
-//! names into clerk-js JSON option keys — Clerk widget component props
+//! names into clerk-js JSON option keys: Clerk widget component props
 //! delegate to them through the `maybe_*` setter variants, so each clerk-js
 //! key is stated exactly once. Use [`JsonOptions::option`] or
 //! `serde_json::Value` directly for Clerk options this crate has not named

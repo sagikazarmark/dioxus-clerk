@@ -5,7 +5,7 @@ use crate::ui::Spinner;
 
 /// Clerk's waitlist form. The widget mounts regardless of configuration, but
 /// submissions only work when the Clerk instance's sign-up mode is set to
-/// "Waitlist" in the Dashboard — which also disables normal sign-up on that
+/// "Waitlist" in the Dashboard, which also disables normal sign-up on that
 /// instance. See the callout on this page.
 #[component]
 pub fn WaitlistExample() -> Element {

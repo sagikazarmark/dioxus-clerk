@@ -101,7 +101,7 @@ where
 /// A request with no `VerificationOutcome` extension means no
 /// [`crate::server::ClerkAuthLayer`] ran for this route. The layer inserts an
 /// outcome on every request it forwards, so this almost always indicates a
-/// forgotten `.layer(...)` — which would otherwise be indistinguishable from
+/// forgotten `.layer(...)`, which would otherwise be indistinguishable from
 /// "everyone is anonymous". Warn once so the misconfiguration is visible in
 /// production without flooding the log on every request. Shared with the
 /// server-function context readers, which face the same hazard.

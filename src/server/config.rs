@@ -21,8 +21,8 @@ pub(crate) const DEFAULT_CLOCK_SKEW: Duration = Duration::from_secs(5);
 ///
 /// # Security: default claim acceptance
 ///
-/// By default — with no issuers, audiences, or authorized parties configured
-/// — verification accepts **any** RS256 JWT that is signed by your instance's
+/// By default (with no issuers, audiences, or authorized parties configured)
+/// verification accepts **any** RS256 JWT that is signed by your instance's
 /// JWKS and passes standard `exp`/`nbf` validation. The `iss`, `aud`, and
 /// `azp` claims are not checked.
 ///
@@ -42,16 +42,16 @@ pub(crate) const DEFAULT_CLOCK_SKEW: Duration = Duration::from_secs(5);
 /// only if you deliberately verify non-session Clerk JWTs here.
 ///
 /// The claim checks below are further defense-in-depth for setups where the
-/// single-instance assumption is weaker — multiple apps or environments sharing
+/// single-instance assumption is weaker: multiple apps or environments sharing
 /// an instance, satellite domains, or tokens minted for a different audience
 /// that you do not want one service to accept for another. For those, harden
 /// verification:
 ///
-/// - [`add_authorized_party`](Self::add_authorized_party) — restrict the
+/// - [`add_authorized_party`](Self::add_authorized_party): restrict the
 ///   `azp` origins that may present tokens (Clerk's recommended check; tokens
 ///   without `azp` are still accepted, matching Clerk's guidance).
-/// - [`add_issuer`](Self::add_issuer) — pin the instance frontend origin.
-/// - [`add_audience`](Self::add_audience) — require a specific `aud` when you
+/// - [`add_issuer`](Self::add_issuer): pin the instance frontend origin.
+/// - [`add_audience`](Self::add_audience): require a specific `aud` when you
 ///   mint audience-scoped tokens.
 #[derive(Clone)]
 pub struct ClerkAuthLayerConfig {

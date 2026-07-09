@@ -17,7 +17,7 @@ pub(crate) struct ClerkContext {
     /// (server) or from the document reader (wasm), then updated by
     /// clerk-js listeners on the wasm side.
     pub(crate) auth: Signal<AuthRuntimeState>,
-    /// Surfaces fatal failures from the wasm-side clerk-js init flow — cases
+    /// Surfaces fatal failures from the wasm-side clerk-js init flow: cases
     /// where loading can no longer succeed:
     /// - no publishable key available from props or SSR seed
     /// - the clerk-js script failing to load or timing out
@@ -25,7 +25,7 @@ pub(crate) struct ClerkContext {
     ///   origin not whitelisted, network, etc.)
     ///
     /// `ClerkFailed` renders on this signal, the action scheduler drops
-    /// queued operations on it, and awaited actions fail fast on it — so
+    /// queued operations on it, and awaited actions fail fast on it, so
     /// only errors that make loading impossible belong here. Stays `None`
     /// on the SSR path and through the happy-path init.
     pub(crate) load_error: Signal<Option<ClerkError>>,

@@ -24,7 +24,7 @@ pub fn Home() -> Element {
             p { class: "mt-5 max-w-[68ch] text-lg leading-8 text-base-content/70",
                 "Signed in as "
                 code { class: "rounded bg-base-200 px-1.5 py-0.5 text-sm", "{id}" }
-                ". Browse the examples in the sidebar — each one mounts a live feature next to the exact source that renders it."
+                ". Browse the examples in the sidebar: each one mounts a live feature next to the exact source that renders it."
             }
         }
     } else {
@@ -106,7 +106,7 @@ pub fn Buttons() -> Element {
             code: rsx! { Code { src: code!("src/examples/buttons.rs"), theme: snippet_theme() } },
         }
         p { class: "mt-6 text-sm text-base-content/60",
-            "For a design-system button that owns its own element, call use_clerk() from an onclick instead — see the "
+            "For a design-system button that owns its own element, call use_clerk() from an onclick instead; see the "
             Link { to: Route::Imperative {}, class: "link link-primary", "Imperative actions" }
             " page."
         }

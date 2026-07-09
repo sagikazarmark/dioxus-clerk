@@ -1,6 +1,6 @@
 //! Shared presentation helpers used across the demo pages.
 //!
-//! Nothing here touches Clerk — it is pure layout chrome so the `pages` and
+//! Nothing here touches Clerk: it is pure layout chrome so the `pages` and
 //! `examples` modules can stay focused on the library being demonstrated.
 
 use dioxus::prelude::*;

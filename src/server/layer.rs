@@ -66,7 +66,7 @@ fn service_future<E>(future: BoxServiceFuture<E>) -> ServiceFuture<E> {
 /// # Restricting accepted tokens
 ///
 /// With the default configuration, **any** JWT signed by your Clerk instance
-/// key verifies — including tokens minted from Clerk JWT templates for
+/// key verifies, including tokens minted from Clerk JWT templates for
 /// third-party integrations, which legitimately reach browsers. If your
 /// instance uses JWT templates, configure
 /// [`ClerkAuthLayerConfig::with_issuers`] and

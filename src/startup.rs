@@ -16,7 +16,7 @@ pub(crate) fn provider_startup(prop_publishable_key: Option<String>) -> Provider
 }
 
 /// Native render without server verification: the seed read is `Missing`, so
-/// the interpreted seed stays `loading` — not signed-out — and no
+/// the interpreted seed stays `loading`, not signed-out, and no
 /// initial-state script is emitted. A returning signed-in user must not see a
 /// signed-out flash from a render that never checked their session.
 #[cfg(all(not(target_arch = "wasm32"), not(feature = "server")))]

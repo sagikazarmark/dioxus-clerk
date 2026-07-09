@@ -16,7 +16,7 @@ thread_local! {
     ///
     /// clerk-js keeps the wrapped `routerPush`/`routerReplace` JS closures for
     /// the life of the page, while provider instances come and go (route-layout
-    /// remounts) and a Dioxus `Callback` dies with its owning scope — calling
+    /// remounts) and a Dioxus `Callback` dies with its owning scope, calling
     /// one after its provider unmounts aborts the whole wasm app. The JS
     /// closures therefore read through these page-scoped slots: every provider
     /// mount re-populates them (so the closures installed by the first
@@ -27,7 +27,7 @@ thread_local! {
     static ROUTER_REPLACE: Cell<Option<Callback<String>>> = const { Cell::new(None) };
     /// Which `set_router_callbacks` call currently owns the slots. Dioxus may
     /// mount a replacement provider before dropping the old one, so an
-    /// unmounting provider must only clear the slots it still owns — otherwise
+    /// unmounting provider must only clear the slots it still owns; otherwise
     /// its late `use_drop` would wipe the fresh provider's callbacks and
     /// clerk-js navigation would silently no-op for the rest of the page.
     static ROUTER_SLOT_OWNER: Cell<u64> = const { Cell::new(0) };
@@ -43,7 +43,7 @@ thread_local! {
     /// promise's reject callback and cleared on a successful load, so it
     /// tracks the real outcome across provider remounts. The lifecycle reads it
     /// to avoid a second `Clerk.load()` on a live instance whose first load
-    /// already failed — clerk-js does not support re-loading a live singleton,
+    /// already failed: clerk-js does not support re-loading a live singleton,
     /// so that failure is terminal until a fresh clerk-js is injected (only the
     /// script-tag-failure path re-injects, and it never reaches `Clerk.load()`,
     /// so it never sets this marker).
@@ -62,7 +62,7 @@ pub(crate) fn load_failure() -> Option<String> {
 }
 
 /// Records a terminal `Clerk.load()` failure that the promise itself never
-/// reported — specifically the lifecycle's settle-deadline firing while the JS
+/// reported: specifically the lifecycle's settle-deadline firing while the JS
 /// promise is still pending. Dropping the Rust future does not cancel the JS
 /// promise, so without this marker the in-flight flag stays set forever and
 /// every provider remount pays another full settle timeout before erroring.
@@ -102,7 +102,7 @@ pub(crate) fn set_router_callbacks(
     RouterSlotToken(token)
 }
 
-/// Disconnect clerk-js from the scope-owned callbacks — unless a newer
+/// Disconnect clerk-js from the scope-owned callbacks, unless a newer
 /// provider has already taken over the slots. Idempotent.
 pub(crate) fn clear_router_callbacks(token: RouterSlotToken) {
     ROUTER_SLOT_OWNER.with(|owner| {
@@ -175,7 +175,7 @@ impl ClerkBridge {
         // so the closures must be `Closure::new` and outlive this Rust scope:
         // the JS promise settles them after the awaiting future may be gone.
         // `forget` leaks two closures per Clerk.load() (once-per-page), each
-        // firing at most once — accepted over reworking the settle wiring.
+        // firing at most once; accepted over reworking the settle wiring.
         let _ = promise.then2(&on_resolve, &on_reject);
         on_resolve.forget();
         on_reject.forget();
@@ -540,7 +540,7 @@ mod tests {
         assert!(!load_in_flight());
 
         // Poll the load once (sets the flag, attaches settle callbacks), then
-        // drop it — the provider-unmount cancellation case.
+        // drop it: the provider-unmount cancellation case.
         assert!(
             ClerkBridge::current()
                 .load(&serde_json::Value::Null)
@@ -627,7 +627,7 @@ mod tests {
 
     // Install a fake Clerk whose `__internal_openReverification` records the
     // props it received and settles asynchronously (a microtask) by calling the
-    // named outcome callback — mirroring how real clerk-js drives the UI.
+    // named outcome callback, mirroring how real clerk-js drives the UI.
     fn install_reverification_clerk(outcome_callback: &str) -> JsValue {
         let clerk = Object::new();
         set_prop(
@@ -769,7 +769,7 @@ mod tests {
         clear_clerk_ui_ctor();
     }
 
-    // Loaded externally without the UI bundle: no ctor, so no `ui` key — and
+    // Loaded externally without the UI bundle: no ctor, so no `ui` key, and
     // the real options still pass through untouched.
     #[wasm_bindgen_test]
     fn load_options_js_omits_ui_without_ctor() {
