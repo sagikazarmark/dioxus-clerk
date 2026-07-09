@@ -66,13 +66,9 @@ type Demo {
   }
 
   """
-  Run the Dioxus demo application.
+  Serve the Dioxus demo application.
   """
-  serve(ws: Workspace!): Service! {
-    # Mirror `build`: serve the native fullstack app so Dioxus server functions
-    # and the custom /api routes work. The client half must use the
-    # `fullstack-web` feature (the plain `web` feature is the Cloudflare-SPA
-    # client, whose backend calls target the Worker, not local server fns).
+  service(ws: Workspace!): Service! @up {
     self.dioxus.serve(
       self.withAssets(ws),
       fullstack: true,
