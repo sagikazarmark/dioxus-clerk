@@ -29,7 +29,7 @@ static ROUTER_VARIANT: GlobalSignal<u8> = Signal::global(|| 0);
 
 /// Writing a `GlobalSignal` requires a current dioxus runtime; the test body
 /// has none, so route the write through the VirtualDom's runtime. Call after
-/// `VirtualDom::new` (which creates the runtime) — for the initial value,
+/// `VirtualDom::new` (which creates the runtime), for the initial value,
 /// before `rebuild_in_place`.
 fn set_show_provider(dom: &VirtualDom, value: bool) {
     dom.in_runtime(|| *SHOW_PROVIDER.write() = value);
@@ -443,7 +443,7 @@ async fn router_push_routes_to_replacement_provider_after_swap() {
 
     // Replace provider A with provider B in one update. Whichever order Dioxus
     // uses for mount-vs-drop, B ends up owning the router slots, so the JS
-    // closure from the first Clerk.load() must route to B's callback — not
+    // closure from the first Clerk.load() must route to B's callback, not
     // silently no-op because A's late use_drop wiped B's fresh callbacks.
     set_router_variant(&dom, 1);
     wasm_support::settle_ticks(&mut dom, 3).await;

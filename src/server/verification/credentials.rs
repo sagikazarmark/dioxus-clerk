@@ -12,7 +12,7 @@ const SESSION_COOKIE_NAME: &str = "__session";
 /// A request legitimately carries the unsuffixed `__session` plus at most a
 /// handful of suffixed multi-session variants. Capping the fan-out stops a
 /// caller from packing its own `Cookie` header with many bad-signature tokens
-/// to force one RSA verification each (CPU amplification) — the one unbounded
+/// to force one RSA verification each (CPU amplification): the one unbounded
 /// work multiplier the rest of the verification path deliberately avoids. The
 /// most-specific, likely-valid cookies are ordered first (see
 /// [`session_cookies`]), so the cap costs a legitimate request nothing.
@@ -95,8 +95,8 @@ fn bearer_token(req: &Request<Body>) -> Option<&str> {
 /// Parsed straight from the `Cookie` headers, not through a `CookieJar`: a
 /// jar deduplicates by name keeping the *last* occurrence, while a request
 /// can legitimately carry several `__session` cookies (e.g. a host-only and
-/// a domain-wide cookie) and RFC 6265 §5.4 orders the more specific — usually
-/// correct — one *first*. Every occurrence must stay a candidate so a stale
+/// a domain-wide cookie) and RFC 6265 §5.4 orders the more specific (usually
+/// correct) one *first*. Every occurrence must stay a candidate so a stale
 /// duplicate cannot shadow the valid session (any-valid-wins in `verify`).
 fn session_cookies(req: &Request<Body>) -> Vec<String> {
     let cookies: Vec<Cookie<'_>> = req

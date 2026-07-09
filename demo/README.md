@@ -11,7 +11,7 @@ The demo has two supported server modes:
 
 | Directory | Role |
 | --- | --- |
-| `src/examples/` | Small, pure components — one per feature. Mounted live *and* rendered as the on-page snippet. |
+| `src/examples/` | Small, pure components: one per feature. Mounted live *and* rendered as the on-page snippet. |
 | `src/pages/` | Route components: prose, docs links, setup callouts, and the example's source via `code!`. |
 | `src/app.rs` | Router (`Route`), the single `ClerkProvider`, and the header + grouped sidebar shell. |
 | `src/ui.rs` | Presentation-only helpers (`ExampleSection`, `SetupCallout`, …); no Clerk usage. |
@@ -50,10 +50,10 @@ See the [top-level Getting started](../README.md#getting-started) for the Rust t
 
 | Var | When this example reads it | Notes |
 | --- | --- | --- |
-| `CLERK_PUBLISHABLE_KEY` | build time, via `env!` | Baked into both the wasm and server binaries — keep it consistent across the two halves. |
+| `CLERK_PUBLISHABLE_KEY` | build time, via `env!` | Baked into both the wasm and server binaries; keep it consistent across the two halves. |
 | `CLERK_SECRET_KEY` | runtime, server only | Read by the native `serve()` block / Worker when constructing `ClerkAuthLayer`. Never reaches the wasm bundle. |
 
-Provide them by exporting into your shell, or — inside the **devenv** shell — by creating a `.env` in the repo root, which devenv's `dotenv` loads automatically. Copy [`.env.dist`](../.env.dist) as a starting point:
+Provide them by exporting into your shell, or (inside the **devenv** shell) by creating a `.env` in the repo root, which devenv's `dotenv` loads automatically. Copy [`.env.dist`](../.env.dist) as a starting point:
 
 ```bash
 # from the repo root
@@ -65,7 +65,7 @@ cp .env.dist .env   # then fill in pk_test_... / sk_test_...
 ```bash
 cd demo
 
-# 1. Keys — skip if you use a repo-root .env under devenv
+# 1. Keys: skip if you use a repo-root .env under devenv
 export CLERK_PUBLISHABLE_KEY=pk_test_xxx
 export CLERK_SECRET_KEY=sk_test_xxx
 
@@ -85,7 +85,7 @@ dx serve --fullstack --features fullstack-web
 
 ## Run with Dagger
 
-Dagger builds and runs everything in containers — no local Node, `dx`, or Wrangler required. It reads the Clerk (and, for the Worker, Cloudflare) keys from a `.env` in the repo root, so **that file is required** for these commands:
+Dagger builds and runs everything in containers: no local Node, `dx`, or Wrangler required. It reads the Clerk (and, for the Worker, Cloudflare) keys from a `.env` in the repo root, so **that file is required** for these commands:
 
 ```bash
 cd demo

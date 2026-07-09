@@ -6,7 +6,7 @@ use dioxus_clerk::*;
 /// `OrganizationSwitcher` is the active-org menu; `OrganizationList` lets a
 /// user pick or create one; `CreateOrganization` is the standalone create form.
 /// `Protect` renders its children only when the signed-in user holds the given
-/// org role (or permission), verified against server-verified auth claims —
+/// org role (or permission), verified against server-verified auth claims;
 /// otherwise it renders `fallback`. Fail-closed: enforce on the server too.
 #[component]
 pub fn OrganizationsExample() -> Element {

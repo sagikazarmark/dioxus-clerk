@@ -66,7 +66,7 @@ pub(crate) async fn try_run(
 ///
 /// Called once by `ClerkProvider`, so queued operations from every hook share
 /// one FIFO order. When the load flow has failed, queued operations are
-/// dropped — the load error is already surfaced and the operations could
+/// dropped: the load error is already surfaced and the operations could
 /// never run.
 #[cfg(clerk_client)]
 pub(crate) fn use_action_scheduler(ctx: ClerkContext) {

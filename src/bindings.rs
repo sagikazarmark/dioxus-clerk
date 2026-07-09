@@ -44,21 +44,21 @@ extern "C" {
     #[wasm_bindgen(catch, method, js_name = "redirectToSignUp")]
     pub fn redirect_to_sign_up(this: &Clerk, opts: &JsValue) -> Result<Promise, JsValue>;
 
-    /// `Clerk.openSignIn(opts?)` — opens the sign-in modal.
+    /// `Clerk.openSignIn(opts?)`: opens the sign-in modal.
     #[wasm_bindgen(catch, method, js_name = "openSignIn")]
     pub fn open_sign_in(this: &Clerk, opts: &JsValue) -> Result<(), JsValue>;
     /// `Clerk.closeSignIn()`.
     #[wasm_bindgen(catch, method, js_name = "closeSignIn")]
     pub fn close_sign_in(this: &Clerk) -> Result<(), JsValue>;
 
-    /// `Clerk.openSignUp(opts?)` — opens the sign-up modal.
+    /// `Clerk.openSignUp(opts?)`: opens the sign-up modal.
     #[wasm_bindgen(catch, method, js_name = "openSignUp")]
     pub fn open_sign_up(this: &Clerk, opts: &JsValue) -> Result<(), JsValue>;
     /// `Clerk.closeSignUp()`.
     #[wasm_bindgen(catch, method, js_name = "closeSignUp")]
     pub fn close_sign_up(this: &Clerk) -> Result<(), JsValue>;
 
-    /// `Clerk.openUserProfile(opts?)` — opens the user-profile modal.
+    /// `Clerk.openUserProfile(opts?)`: opens the user-profile modal.
     #[wasm_bindgen(catch, method, js_name = "openUserProfile")]
     pub fn open_user_profile(this: &Clerk, opts: &JsValue) -> Result<(), JsValue>;
     /// `Clerk.closeUserProfile()`.
@@ -73,7 +73,7 @@ extern "C" {
 /// avoid `#[wasm_bindgen(thread_local_v2)] static CLERK` here: that pattern
 /// caches the value in a `LazyCell` on first access, which means a poll
 /// performed before clerk-js finished loading would capture `undefined` and
-/// cache it forever — even after `window.Clerk` is set.
+/// cache it forever, even after `window.Clerk` is set.
 pub fn clerk_singleton() -> Option<Clerk> {
     let window = web_sys::window()?;
     let clerk = Reflect::get(&window, &JsValue::from_str("Clerk")).ok()?;

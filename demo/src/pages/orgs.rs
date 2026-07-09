@@ -22,13 +22,13 @@ pub fn Organizations() -> Element {
             "Enable Organizations under Configure → Organizations, then create an org and assign roles. "
             "The Protect example below looks for the "
             code { class: "rounded bg-base-200 px-1 py-0.5 text-xs", "org:admin" }
-            " role — configure roles under "
+            " role, configure roles under "
             DocLink { href: "https://clerk.com/docs/organizations/roles-permissions", "Roles & permissions" }
             "."
         }
         ExampleSection {
             title: "Switcher, list, create, and Protect",
-            intro: "OrganizationSwitcher, OrganizationList, CreateOrganization, and OrganizationProfile are hosted widgets. Protect renders its children only for the matching org role — fail-closed, so always enforce on the server too.",
+            intro: "OrganizationSwitcher, OrganizationList, CreateOrganization, and OrganizationProfile are hosted widgets. Protect renders its children only for the matching org role; fail-closed, so always enforce on the server too.",
             demo: rsx! { OrganizationsExample {} },
             code: rsx! { Code { src: code!("src/examples/organizations.rs"), theme: snippet_theme() } },
         }
@@ -53,7 +53,7 @@ pub fn WaitlistPage() -> Element {
             b { "Waitlist" }
             " (Configure → Restrictions). Note this "
             b { "disables normal sign-up" }
-            " on the same Clerk instance, so it conflicts with the embedded sign-up demo — use a separate instance to try it live."
+            " on the same Clerk instance, so it conflicts with the embedded sign-up demo; use a separate instance to try it live."
         }
         ExampleSection {
             title: "<Waitlist>",

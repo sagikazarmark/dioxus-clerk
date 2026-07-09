@@ -102,7 +102,7 @@ struct MountedWidget {
     id: String,
     options: serde_json::Value,
     /// The DOM element clerk-js actually mounted into. Unmount paths must use
-    /// this element — after an `id` prop change a fresh document lookup finds
+    /// this element: after an `id` prop change a fresh document lookup finds
     /// the wrong (or no) element, leaving clerk-js bookkeeping behind.
     #[cfg(clerk_client)]
     element: web_sys::Element,
@@ -154,7 +154,7 @@ fn WidgetHost(
     // The clerk-js mount target id, in precedence order: the explicit `id`
     // prop, then an `id` from the attribute spread, then a generated
     // scope-stable id. clerk-js mounts into this element by id, so the widget
-    // must know it — the explicit prop stays authoritative, but a spread `id`
+    // must know it: the explicit prop stays authoritative, but a spread `id`
     // is honored as a fallback rather than silently dropped.
     let id = host
         .id

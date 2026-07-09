@@ -33,7 +33,7 @@ const UI_SCRIPT_ID: &str = "__dioxus_clerk_ui";
 /// The clerk-js script URL to inject for a publishable key.
 ///
 /// Derives the instance's Frontend API host from the key and serves clerk-js
-/// from it — matching Clerk's own loaders, so the script stays version-matched
+/// from it, matching Clerk's own loaders, so the script stays version-matched
 /// with the backend it calls. Falls back to a pinned public CDN only when the
 /// key cannot be decoded.
 fn default_script_url(publishable_key: &str) -> String {
@@ -68,8 +68,8 @@ pub(crate) fn script_load_error() -> Option<String> {
     SCRIPT_LOAD_ERROR.with(|slot| slot.borrow().clone())
 }
 
-/// Whether the `@clerk/ui` script tag from [`inject_script`] is in the document
-/// — i.e. this crate is loading the UI bundle and the load flow must wait for
+/// Whether the `@clerk/ui` script tag from [`inject_script`] is in the document,
+/// i.e. this crate is loading the UI bundle and the load flow must wait for
 /// its constructor before calling `Clerk.load()`. False when a live
 /// `window.Clerk` was already present and injection was skipped.
 pub(crate) fn ui_script_injected() -> bool {

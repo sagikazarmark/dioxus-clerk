@@ -567,7 +567,7 @@ pub enum SessionStatus {
     /// Only produced by the `From<&str>`/`From<String>`/`FromStr` conversions,
     /// which canonicalize known strings to their named variants first. The
     /// payload is an [`OtherStatus`] with no public constructor, so an `Other`
-    /// can never alias a named variant (e.g. hold `"active"`) — reads through
+    /// can never alias a named variant (e.g. hold `"active"`): reads through
     /// [`SessionStatus::as_str`] and comparisons therefore stay consistent.
     Other(OtherStatus),
 }

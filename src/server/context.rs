@@ -23,7 +23,7 @@ fn required_context_outcome() -> Result<Option<VerificationOutcome>, ClerkError>
     let outcome = ctx.extension::<VerificationOutcome>();
     if outcome.is_none() {
         // A context without an outcome means no ClerkAuthLayer ran for this
-        // request — otherwise indistinguishable from "everyone is anonymous".
+        // request; otherwise indistinguishable from "everyone is anonymous".
         super::extractor::log_missing_layer();
     }
     Ok(outcome)

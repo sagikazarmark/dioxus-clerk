@@ -1,12 +1,14 @@
 use dioxus::prelude::*;
 use dioxus_clerk::*;
 
+use crate::ui::StatusLine;
+
 /// Drive Clerk from your own elements.
 ///
 /// `use_clerk()` returns fire-and-forget actions (open/close modals, redirect,
 /// sign out) that wait for clerk-js to load and surface failures through
 /// `use_clerk_error`. `use_auth()` additionally offers awaited `try_*` variants
-/// that hand you the error directly — use those when you need to react to the
+/// that hand you the error directly; use those when you need to react to the
 /// outcome inline.
 #[component]
 pub fn ImperativeExample() -> Element {
@@ -41,8 +43,6 @@ pub fn ImperativeExample() -> Element {
                 }
             }
         }
-        if !status.read().is_empty() {
-            p { class: "mt-3 text-sm text-base-content/70", "{status}" }
-        }
+        StatusLine { status }
     }
 }

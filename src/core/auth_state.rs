@@ -9,7 +9,7 @@ use super::error::ClerkError;
 /// [`status`](AuthState::status) is the single source of truth for the
 /// signed-in answer; signed-in checks derive from it so contradictory states
 /// cannot be represented. The fields are private so `status` and `user_id`
-/// cannot be mutated out of step with each other — read them through the
+/// cannot be mutated out of step with each other; read them through the
 /// accessors ([`status`](AuthState::status), [`user_id`](AuthState::user_id),
 /// …) and build values through the constructors and `with_*` setters. SSR
 /// initial state carries `crate::ssr::InitialAuthSnapshot` instead. Browser
@@ -180,7 +180,7 @@ impl AuthState {
         self
     }
 
-    /// Explicit auth resolution status — the single source of truth for the
+    /// Explicit auth resolution status: the single source of truth for the
     /// signed-in answer.
     pub fn status(&self) -> AuthStatus {
         self.status

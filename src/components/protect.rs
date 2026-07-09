@@ -21,7 +21,7 @@ use dioxus::prelude::*;
 /// therefore sees `fallback` briefly, then `children` once auth resolves. This
 /// is the safe default (never flash gated content at a not-yet-authorized
 /// user), but it can flash the fallback. If you need to distinguish "still
-/// loading" from "denied" — e.g. to show a spinner instead of the fallback —
+/// loading" from "denied" (e.g. to show a spinner instead of the fallback)
 /// read [`use_auth`](crate::use_auth) directly and branch on
 /// [`is_loading`](crate::UseAuth::is_loading).
 ///

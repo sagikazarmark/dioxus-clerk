@@ -20,7 +20,7 @@ pub enum ClerkError {
     #[error("clerk has not finished loading")]
     NotLoaded,
 
-    /// The browser Clerk lifecycle could not make progress before a deadline —
+    /// The browser Clerk lifecycle could not make progress before a deadline:
     /// a hung `Clerk.load()`, or a lifecycle that never started. Distinct from
     /// [`ClerkError::NotLoaded`], which is the transient still-loading state a
     /// caller can wait out.
@@ -56,7 +56,7 @@ pub enum ClerkError {
 
     /// Server could not fetch or refresh JWKS from Clerk's Backend API.
     ///
-    /// The message is intentionally coarse — this error's `Display` can reach
+    /// The message is intentionally coarse: this error's `Display` can reach
     /// HTTP responses. The verification layer logs the underlying cause at
     /// `warn` level via `tracing`.
     #[error("clerk jwks unavailable: {0}")]
@@ -85,7 +85,7 @@ pub enum ClerkError {
     /// - the client-side path: a direct clerk-js call *throws* a
     ///   `ClerkAPIResponseError` carrying the `session_reverification_required`
     ///   code, which a caller maps into this variant. The throw does not carry
-    ///   the level, so that path yields `level: None` — matching
+    ///   the level, so that path yields `level: None`, matching
     ///   clerk-react's `useReverification`.
     #[error("reverification required")]
     NeedsReverification {

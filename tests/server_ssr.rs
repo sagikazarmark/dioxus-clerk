@@ -17,7 +17,7 @@ use dioxus_clerk::ssr::InitialAuthStatus;
 use dioxus_fullstack_core::FullstackContext;
 
 /// Returns the JSON body of the `<script id="__clerk_initial_state" type="application/json">…</script>`
-/// fragment — i.e. everything between the opening tag and the trailing `</script>`.
+/// fragment, i.e. everything between the opening tag and the trailing `</script>`.
 /// The trailing `</script>` is the legitimate closing tag and is excluded so the
 /// remaining slice can be checked for `</script>` injection inside the payload.
 fn body(html: &str) -> &str {
@@ -156,7 +156,7 @@ fn ssr_script_escapes_script_close_in_user_id() {
     let auth = ClerkAuth::new(r#"u_</script><img src=x>"#, 9_999_999_999);
     let outcome = VerificationOutcome::Valid(auth);
     let html = initial_state_script(Some(&outcome), None);
-    // No raw `<` may appear in the JSON body — only the legitimate closing
+    // No raw `<` may appear in the JSON body: only the legitimate closing
     // tag is allowed. This blocks both `</script>` breakout and
     // `<!--<script>` script-data double-escaping.
     assert!(!body(&html).contains('<'));

@@ -13,7 +13,7 @@ pub const INITIAL_STATE_SCRIPT_ID: &str = "__clerk_initial_state";
 ///
 /// Distinguishes "the server verified this request" (signed-in or signed-out)
 /// from "verification never happened" (`Unverified`), so a render that never
-/// checked the session cannot seed a resolved signed-out state — a returning
+/// checked the session cannot seed a resolved signed-out state: a returning
 /// signed-in user must not see a signed-out flash.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -23,7 +23,7 @@ pub enum InitialAuthStatus {
     SignedIn,
     /// The server verified the request and found no valid session.
     SignedOut,
-    /// The server did not (or could not) verify the request — the auth layer
+    /// The server did not (or could not) verify the request: the auth layer
     /// was absent or verification infrastructure was unavailable. The client
     /// seeds a loading state and resolves auth itself.
     ///
@@ -259,7 +259,7 @@ pub(crate) struct ProviderStartup {
 ///
 /// This is the single consumer for every platform startup path; the paths
 /// differ only in how they produce the [`InitialStateRead`]. A `Missing`
-/// seed stays `loading` — not signed-out — because nothing was verified: a
+/// seed stays `loading`, not signed-out, because nothing was verified: a
 /// returning signed-in user must not see a signed-out flash from a render
 /// that never checked their session. For a `Present` seed the explicit
 /// provider prop wins over the seed's publishable key, and the seed JSON is

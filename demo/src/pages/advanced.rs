@@ -37,7 +37,7 @@ pub fn SessionTasks() -> Element {
         }
         ExampleSection {
             title: "treat_pending_as_signed_out, current_task, and <TaskSetupMFA>",
-            intro: "Opt a subtree in to pending sessions with treat_pending_as_signed_out: false (on SignedIn/SignedOut/Protect, or use_auth), read the task from use_session().session().current_task, and mount TaskSetupMFA — or pass task_urls to ClerkProvider to let clerk-js route pending users automatically.",
+            intro: "Opt a subtree in to pending sessions with treat_pending_as_signed_out: false (on SignedIn/SignedOut/Protect, or use_auth), read the task from use_session().session().current_task, and mount TaskSetupMFA, or pass task_urls to ClerkProvider to let clerk-js route pending users automatically.",
             demo: rsx! { SessionTasksExample {} },
             code: rsx! { Code { src: code!("src/examples/session_tasks.rs"), theme: snippet_theme() } },
         }

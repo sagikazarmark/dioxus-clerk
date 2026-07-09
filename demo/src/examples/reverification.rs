@@ -1,6 +1,8 @@
 use dioxus::prelude::*;
 use dioxus_clerk::*;
 
+use crate::ui::StatusLine;
+
 /// Guard a sensitive action behind Clerk **step-up reverification**.
 ///
 /// `use_reverification()` returns a handle whose `guard` runs your action and,
@@ -11,7 +13,7 @@ use dioxus_clerk::*;
 /// In a real app the **server** decides: a `#[server]` action calls a protected
 /// Clerk endpoint, and maps its 403 hint with
 /// `ClerkError::from_reverification_hint`. Here the gate is simulated in the
-/// browser — the first attempt of each run "needs reverification" — so the
+/// browser: the first attempt of each run "needs reverification", so the
 /// prompt is easy to trigger without a backend.
 #[component]
 pub fn ReverificationExample() -> Element {
@@ -48,20 +50,18 @@ pub fn ReverificationExample() -> Element {
                         .await;
 
                     match outcome {
-                        Ok(result) => status.set(format!("done — {result}")),
+                        Ok(result) => status.set(format!("done: {result}")),
                         Err(ClerkError::ReverificationCancelled) => {
-                            status.set("cancelled — action did not run".to_string())
+                            status.set("cancelled: action did not run".to_string())
                         }
-                        Err(error) => status.set(format!("failed — {error}")),
+                        Err(error) => status.set(format!("failed: {error}")),
                     }
 
                     running.set(false);
                 },
                 "Run sensitive action"
             }
-            if !status.read().is_empty() {
-                p { class: "mt-3 text-sm text-base-content/70", "{status}" }
-            }
+            StatusLine { status }
         }
         SignedOut {
             p { class: "text-sm text-base-content/60",

@@ -12,7 +12,7 @@
 /// The Frontend API host encoded in a Clerk publishable key.
 ///
 /// A publishable key is `pk_test_<b64>` / `pk_live_<b64>`, where `<b64>` is the
-/// standard-base64 Frontend API host with a trailing `$` marker — for example
+/// standard-base64 Frontend API host with a trailing `$` marker, for example
 /// `pk_test_Zm9vLmNsZXJrLmFjY291bnRzLmRldiQ` decodes to `foo.clerk.accounts.dev$`,
 /// yielding `foo.clerk.accounts.dev`. Returns `None` when the key is not shaped
 /// like a publishable key or does not decode to a non-empty host.

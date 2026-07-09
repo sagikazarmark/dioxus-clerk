@@ -1,4 +1,4 @@
-//! dioxus-clerk demo — binary entry point.
+//! dioxus-clerk demo: binary entry point.
 //!
 //! The demo is a docs-by-example gallery: every page mounts a real feature
 //! *and* renders that feature's own source (via the compile-time `code!`

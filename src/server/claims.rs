@@ -58,7 +58,7 @@ impl VerifiedClerkClaims {
             org_slug: jwt.custom.org_slug,
             org_role: jwt.custom.org_role,
             org_permissions: jwt.custom.org_permissions,
-            // `exp` is required — a session token must expire. `nbf`/`iat`
+            // `exp` is required: a session token must expire. `nbf`/`iat`
             // are optional per RFC 7519, so a signature-valid token that
             // omits them must not be rejected here; default them to 0.
             exp: timestamp_seconds(jwt.expires_at)?,

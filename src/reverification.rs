@@ -3,8 +3,8 @@
 //! resumes the action.
 //!
 //! The wrap → prompt → retry control flow lives in [`run_with_reverification`]
-//! as a pure combinator over two async closures — the gated action and the
-//! prompt — so `cargo test` covers it on the host without a browser. The public
+//! as a pure combinator over two async closures (the gated action and the
+//! prompt) so `cargo test` covers it on the host without a browser. The public
 //! [`use_reverification`] hook wires the prompt to clerk-js's reverification UI.
 
 use crate::context::{ClerkContext, use_clerk_context};

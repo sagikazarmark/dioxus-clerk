@@ -1,6 +1,8 @@
 use dioxus::prelude::*;
 use dioxus_clerk::*;
 
+use crate::ui::Spinner;
+
 /// Account UI for a signed-in user. `UserAvatar` is a lightweight `<img>` of
 /// the current user's image (handy for custom headers). `UserButton` is the
 /// hosted account menu; `user_profile_mode` picks whether it opens the profile
@@ -20,9 +22,7 @@ pub fn ProfileExample() -> Element {
             UserProfile {
                 routing: Routing::Hash,
                 class: "mt-6",
-                fallback: rsx! {
-                    div { class: "text-sm text-base-content/60", "Loading profile…" }
-                },
+                fallback: rsx! { Spinner {} },
             }
         }
         SignedOut {

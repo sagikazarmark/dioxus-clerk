@@ -23,15 +23,15 @@ pub fn GatingExample() -> Element {
         }
 
         div { class: "mt-4 space-y-1 text-sm",
-            SignedIn { p { "SignedIn — a session is known." } }
-            SignedOut { p { "SignedOut — auth resolved with no session." } }
+            SignedIn { p { "SignedIn: a session is known." } }
+            SignedOut { p { "SignedOut: auth resolved with no session." } }
             SignedInWhenLoaded {
                 fallback: rsx! { p { class: "text-base-content/50", "waiting for clerk-js…" } },
-                p { "SignedInWhenLoaded — session confirmed after load." }
+                p { "SignedInWhenLoaded: session confirmed after load." }
             }
             Protect {
-                fallback: rsx! { p { class: "text-base-content/50", "Protect — hidden while signed out." } },
-                p { "Protect — visible while signed in." }
+                fallback: rsx! { p { class: "text-base-content/50", "Protect: hidden while signed out." } },
+                p { "Protect: visible while signed in." }
             }
         }
 

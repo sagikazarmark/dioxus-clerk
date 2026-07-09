@@ -34,7 +34,7 @@ pub fn initial_state(
 /// resolves itself. See [`InitialState::from_outcome`].
 ///
 /// Do not combine with a server-rendered [`crate::ClerkProvider`], which
-/// already emits this element — see the module docs.
+/// already emits this element; see the module docs.
 pub fn initial_state_script(
     outcome: Option<&VerificationOutcome>,
     publishable_key: Option<&str>,
@@ -51,7 +51,7 @@ pub fn initial_state_from_current_context(publishable_key: Option<&str>) -> Init
 /// Returns an SSR initial state script for the current Dioxus fullstack context.
 ///
 /// Do not combine with a server-rendered [`crate::ClerkProvider`], which
-/// already emits this element — see the module docs.
+/// already emits this element; see the module docs.
 pub fn initial_state_script_from_current_context(publishable_key: Option<&str>) -> String {
     let outcome = super::context::current_outcome();
     initial_state_script(outcome.as_ref(), publishable_key)

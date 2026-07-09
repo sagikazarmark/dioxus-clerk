@@ -10,7 +10,7 @@ use wasm_bindgen_futures::JsFuture;
 /// Safety-net deadline for a step-up reverification prompt.
 ///
 /// Reverification is user-driven (the user enters a fresh authentication
-/// factor), so this is deliberately generous — it is not a UX cutoff. It exists
+/// factor), so this is deliberately generous: it is not a UX cutoff. It exists
 /// only to bound the pathological case where clerk-js tears the prompt down
 /// without ever firing `afterVerification`/`afterVerificationCancelled`, which
 /// would otherwise leave the awaiting future pending forever. Every other
@@ -162,8 +162,8 @@ impl ClerkHandle {
     /// resolve once the user completes or cancels it.
     ///
     /// Calls `Clerk.__internal_openReverification({ level, afterVerification,
-    /// afterVerificationCancelled })` — the internal entry point clerk-react's
-    /// `useReverification` uses — and awaits a Promise the two callbacks settle:
+    /// afterVerificationCancelled })` (the internal entry point clerk-react's
+    /// `useReverification` uses) and awaits a Promise the two callbacks settle:
     /// `afterVerification` resolves it as [`ReverificationOutcome::Completed`],
     /// `afterVerificationCancelled` as [`ReverificationOutcome::Cancelled`].
     pub(crate) async fn open_reverification(
@@ -191,7 +191,7 @@ impl ClerkHandle {
             // prompt, and may do so after the awaiting future is already gone
             // (e.g. the component unmounted mid-prompt). `Closure::once_into_js`
             // hands ownership to the JS side and keeps each closure alive until
-            // it fires — so a late call stays safe — while reclaiming the memory
+            // it fires (so a late call stays safe) while reclaiming the memory
             // of the one that does fire. Only the unused callback is retained,
             // which any late-call-safe approach must do; this avoids the double
             // leak `Closure::forget` would incur on every prompt.
@@ -418,7 +418,7 @@ pub(crate) fn js_error(value: JsValue) -> ClerkError {
 }
 
 /// Map a `session.getToken()` rejection, distinguishing the v6
-/// `ClerkOfflineError` (browser offline — a transient condition callers can
+/// `ClerkOfflineError` (browser offline, a transient condition callers can
 /// retry) from other JS throws. clerk-js 6 throws this where 5.x returned a
 /// `null` token.
 pub(crate) fn token_error(value: JsValue) -> ClerkError {
