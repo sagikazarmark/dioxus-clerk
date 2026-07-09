@@ -5,7 +5,10 @@ type Demo {
   let workerBuild: WorkerBuild!
 
   new(ws: Workspace!) {
-    let envFile: File = ws.findUp(".env").{ if (_ != null) ws.file(_) }
+    let envFile: File = Dagger
+      .envFile
+      .withVariable("CLERK_PUBLISHABLE_KEY", "pk_live_Y2xlcmsuY2xlcmstZGVtby5kaW94dXMuY2Mk")
+      .asFile
     let rustVersion = "1.96-trixie"
 
     # Shared base container: the official Rust image plus clang. clang is needed

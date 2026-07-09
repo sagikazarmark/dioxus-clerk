@@ -3,13 +3,11 @@ main = "dist/worker/index.js"
 compatibility_date = "2026-05-30"
 
 send_metrics = false
-workers_dev = true
+
+route = { pattern = "clerk-demo.dioxus.cc", custom_domain = true, zone_name = "dioxus.cc" }
 
 [observability]
 enabled = true
-
-# [build]
-# command = "npm run build && dx bundle --web --fullstack false --release --out-dir dist && worker-build --release -- --no-default-features --features worker"
 
 [assets]
 binding = "ASSETS"
