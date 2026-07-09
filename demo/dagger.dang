@@ -1,3 +1,5 @@
+let DEV_PUBLISHABLE_KEY = "pk_test_c291bmQtY3JpY2tldC0yNy5jbGVyay5hY2NvdW50cy5kZXYk"
+
 type Demo {
   let jsEnv: JavascriptEnvironment!
   let dioxus: Dioxus!
@@ -5,6 +7,7 @@ type Demo {
 
   new(ws: Workspace!) {
     let rustVersion = "1.96-trixie"
+    let envFile = ws.findUp(".env").{ if (_ != null) ws.file(_) }
 
     # Shared base container: the official Rust image plus clang. clang is needed
     # to cross-compile the C sysroot pulled in by the `dioxus-code` snippet
@@ -22,10 +25,18 @@ type Demo {
 
     # TODO: lock js env version? Use bun directly?
     self.jsEnv = Dagger.javascriptEnvironment(install: true, locked: true)
-    self.dioxus = Dagger.dioxus(container: rustContainer)
-    self.workerBuild = Dagger.workerBuild(container: rustContainer)
+    self.dioxus = Dagger.dioxus(container: rustContainer, envFile: envFile)
+    self.workerBuild = Dagger.workerBuild(container: rustContainer, envFile: envFile)
 
     self
+  }
+
+  let getDioxus(publishableKey: String): Dioxus! {
+    self.dioxus.withEnvVariable("CLERK_PUBLISHABLE_KEY", publishableKey ?? DEV_PUBLISHABLE_KEY)
+  }
+
+  let getWorkerBuild(publishableKey: String): WorkerBuild! {
+    self.workerBuild.withEnvVariable("CLERK_PUBLISHABLE_KEY", publishableKey ?? DEV_PUBLISHABLE_KEY)
   }
 
   let withAssets(ws: Workspace!): Workspace! {
@@ -50,9 +61,9 @@ type Demo {
   """
   Build the Dioxus demo application.
   """
-  build(ws: Workspace!): Directory! @check {
+  build(ws: Workspace!, publishableKey: String): Directory! @check {
     self
-      .dioxus
+      .getDioxus(publishableKey)
       .bundle(
         self.withAssets(ws),
         fullstack: true,
@@ -66,7 +77,7 @@ type Demo {
   Serve the Dioxus demo application.
   """
   service(ws: Workspace!): Service! @up {
-    self.dioxus.serve(
+    self.getDioxus(null).serve(
       self.withAssets(ws),
       fullstack: true,
       clientArgs: ["--features", "fullstack-web"],
@@ -87,13 +98,9 @@ type Worker {
   """
   Builds the Cloudflare Worker bundle.
   """
-  build(
-    ws: Workspace!,
-    publishableKey: String! = "pk_test_c291bmQtY3JpY2tldC0yNy5jbGVyay5hY2NvdW50cy5kZXYk",
-  ): Directory! @check {
+  build(ws: Workspace!, publishableKey: String): Directory! @check {
     let client = parent
-      .dioxus
-      .withEnvVariable("CLERK_PUBLISHABLE_KEY", publishableKey)
+      .getDioxus(publishableKey)
       .bundle(
         parent.withAssets(ws),
         fullstack: false,
@@ -103,8 +110,7 @@ type Worker {
       )
 
     let server = parent
-      .workerBuild
-      .withEnvVariable("CLERK_PUBLISHABLE_KEY", publishableKey)
+      .getWorkerBuild(publishableKey)
       .build(ws, args: ["--no-default-features", "--features", "worker"])
 
     Dagger
@@ -118,13 +124,7 @@ type Worker {
   Runs the Cloudflare Worker locally using `wrangler dev`.
   """
   dev(ws: Workspace!): Service! {
-    Dagger.wrangler.dev(
-      build(ws, "pk_test_c291bmQtY3JpY2tldC0yNy5jbGVyay5hY2NvdW50cy5kZXYk")
-        .withFile(
-          ".dev.vars",
-          ws.file(".dev.vars"),
-        ),
-    )
+    Dagger.wrangler.dev(build(ws).withFile(".dev.vars", ws.file(".dev.vars")))
   }
 
   deploy(

@@ -72,9 +72,9 @@ pub fn ExampleSection(
     // the live box scroll on its own rather than push the page. Triggers keep a
     // clip-free box so their dropdowns are never cut off.
     let live_class = if stacked {
-        "overflow-x-auto rounded-2xl border border-base-300 bg-base-200/40 p-5"
+        "flex flex-col items-center overflow-x-auto rounded-2xl border border-base-300 bg-base-200/40 p-5"
     } else {
-        "rounded-2xl border border-base-300 bg-base-200/40 p-5"
+        "flex flex-col items-center rounded-2xl border border-base-300 bg-base-200/40 p-5"
     };
     rsx! {
         section { class: "mt-10 rounded-[2rem] border border-base-300 bg-base-100 p-6 shadow-sm sm:p-8",
