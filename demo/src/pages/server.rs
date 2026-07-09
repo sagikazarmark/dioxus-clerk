@@ -3,7 +3,7 @@ use dioxus_clerk::*;
 use dioxus_code::{code, Code};
 
 use crate::examples::server_call::ServerCallExample;
-use crate::ui::{snippet_theme, CheckingAuthPanel, DocLink, ExampleSection, PageHeader};
+use crate::ui::{snippet_theme, CheckingAuthPanel, DocLink, ExampleSection, InlineCode, PageHeader};
 
 #[component]
 pub fn ServerDemo() -> Element {
@@ -27,7 +27,17 @@ pub fn ServerDemo() -> Element {
             }
             ExampleSection {
                 title: "Cookie-verified server fn and bearer token call",
-                intro: "The first button calls a Dioxus #[server] function (the cookie rides along automatically). The second fetches a session token with get_token() and sends it as Authorization: Bearer to a plain /api/whoami route.",
+                intro: rsx! {
+                    "The first button calls a Dioxus "
+                    InlineCode { "#[server]" }
+                    " function (the cookie rides along automatically). The second fetches a session token with "
+                    InlineCode { "get_token()" }
+                    " and sends it as "
+                    InlineCode { "Authorization: Bearer" }
+                    " to a plain "
+                    InlineCode { "/api/whoami" }
+                    " route."
+                },
                 demo: rsx! { ServerCallExample {} },
                 code: rsx! { Code { src: code!("src/examples/server_call.rs"), theme: snippet_theme() } },
             }

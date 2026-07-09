@@ -5,7 +5,7 @@ use dioxus_code::{code, Code};
 use crate::app::Route;
 use crate::examples::buttons::ButtonsExample;
 use crate::examples::minimal::MinimalExample;
-use crate::ui::{snippet_theme, DocLink, ExampleSection, PageHeader};
+use crate::ui::{snippet_theme, DocLink, ExampleSection, InlineCode, PageHeader};
 
 #[component]
 pub fn Home() -> Element {
@@ -84,7 +84,14 @@ pub fn Minimal() -> Element {
         }
         ExampleSection {
             title: "Sign-in action and account controls",
-            intro: "SignedOut and SignedIn pick a branch from resolved auth state. The buttons render plain <button> elements and schedule the matching Clerk action.",
+            intro: rsx! {
+                InlineCode { "SignedOut" }
+                " and "
+                InlineCode { "SignedIn" }
+                " pick a branch from resolved auth state. The buttons render plain "
+                InlineCode { "<button>" }
+                " elements and schedule the matching Clerk action."
+            },
             demo: rsx! { MinimalExample {} },
             code: rsx! { Code { src: code!("src/examples/minimal.rs"), theme: snippet_theme() } },
         }
@@ -101,7 +108,14 @@ pub fn Buttons() -> Element {
         }
         ExampleSection {
             title: "Modal vs. redirect",
-            intro: "AuthButtonMode::Modal opens Clerk's flow in place; AuthButtonMode::Redirect (the default) navigates to the configured URL. SignOutButton ends the session.",
+            intro: rsx! {
+                InlineCode { "AuthButtonMode::Modal" }
+                " opens Clerk's flow in place; "
+                InlineCode { "AuthButtonMode::Redirect" }
+                " (the default) navigates to the configured URL. "
+                InlineCode { "SignOutButton" }
+                " ends the session."
+            },
             demo: rsx! { ButtonsExample {} },
             code: rsx! { Code { src: code!("src/examples/buttons.rs"), theme: snippet_theme() } },
         }

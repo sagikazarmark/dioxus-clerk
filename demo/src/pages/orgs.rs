@@ -1,9 +1,13 @@
 use dioxus::prelude::*;
 use dioxus_code::{code, Code};
 
-use crate::examples::organizations::OrganizationsExample;
+use crate::examples::org_create::OrgCreateExample;
+use crate::examples::org_list::OrgListExample;
+use crate::examples::org_profile::OrgProfileExample;
+use crate::examples::org_protect::OrgProtectExample;
+use crate::examples::org_switcher::OrgSwitcherExample;
 use crate::examples::waitlist::WaitlistExample;
-use crate::ui::{snippet_theme, DocLink, ExampleSection, PageHeader, SetupCallout};
+use crate::ui::{snippet_theme, DocLink, ExampleSection, InlineCode, PageHeader, SetupCallout};
 
 #[component]
 pub fn Organizations() -> Element {
@@ -21,16 +25,58 @@ pub fn Organizations() -> Element {
             docs_url: "https://clerk.com/docs/organizations/overview",
             "Enable Organizations under Configure → Organizations, then create an org and assign roles. "
             "The Protect example below looks for the "
-            code { class: "rounded bg-base-200 px-1 py-0.5 text-xs", "org:admin" }
+            InlineCode { "org:admin" }
             " role, configure roles under "
             DocLink { href: "https://clerk.com/docs/organizations/roles-permissions", "Roles & permissions" }
             "."
         }
         ExampleSection {
-            title: "Switcher, list, create, and Protect",
-            intro: "OrganizationSwitcher, OrganizationList, CreateOrganization, and OrganizationProfile are hosted widgets. Protect renders its children only for the matching org role; fail-closed, so always enforce on the server too.",
-            demo: rsx! { OrganizationsExample {} },
-            code: rsx! { Code { src: code!("src/examples/organizations.rs"), theme: snippet_theme() } },
+            title: "Active-org switcher",
+            intro: rsx! {
+                InlineCode { "OrganizationSwitcher" }
+                " shows the active organization and lets the user switch, create, or manage one from a compact dropdown, ideal for a header."
+            },
+            demo: rsx! { OrgSwitcherExample {} },
+            code: rsx! { Code { src: code!("src/examples/org_switcher.rs"), theme: snippet_theme() } },
+        }
+        ExampleSection {
+            title: "Organization list",
+            stacked: true,
+            intro: rsx! {
+                InlineCode { "OrganizationList" }
+                " is the embedded pick-or-create surface: every org the user belongs to, plus a create action, as a full-width view rather than a dropdown."
+            },
+            demo: rsx! { OrgListExample {} },
+            code: rsx! { Code { src: code!("src/examples/org_list.rs"), theme: snippet_theme() } },
+        }
+        ExampleSection {
+            title: "Create organization",
+            stacked: true,
+            intro: rsx! {
+                InlineCode { "CreateOrganization" }
+                " is the standalone create-an-org form, the same step the switcher and list expose, mounted on its own route."
+            },
+            demo: rsx! { OrgCreateExample {} },
+            code: rsx! { Code { src: code!("src/examples/org_create.rs"), theme: snippet_theme() } },
+        }
+        ExampleSection {
+            title: "Organization profile",
+            stacked: true,
+            intro: rsx! {
+                InlineCode { "OrganizationProfile" }
+                " mounts the full management UI for the active organization, members, invitations, roles, and settings, inline. It needs an active org to show anything."
+            },
+            demo: rsx! { OrgProfileExample {} },
+            code: rsx! { Code { src: code!("src/examples/org_profile.rs"), theme: snippet_theme() } },
+        }
+        ExampleSection {
+            title: "Role-gated rendering",
+            intro: rsx! {
+                InlineCode { "Protect" }
+                " renders its children only for a matching org role or permission, checked against server-verified claims. It is fail-closed, so always enforce the same rule on the server too."
+            },
+            demo: rsx! { OrgProtectExample {} },
+            code: rsx! { Code { src: code!("src/examples/org_protect.rs"), theme: snippet_theme() } },
         }
     }
 }
@@ -57,7 +103,12 @@ pub fn WaitlistPage() -> Element {
         }
         ExampleSection {
             title: "<Waitlist>",
-            intro: "A single hosted component. after_join_waitlist_url (and other options) are available as props.",
+            stacked: true,
+            intro: rsx! {
+                "A single hosted component. "
+                InlineCode { "after_join_waitlist_url" }
+                " (and other options) are available as props."
+            },
             demo: rsx! { WaitlistExample {} },
             code: rsx! { Code { src: code!("src/examples/waitlist.rs"), theme: snippet_theme() } },
         }
