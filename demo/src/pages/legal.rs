@@ -51,7 +51,7 @@ pub fn PrivacyPolicy() -> Element {
             h2 { "Contact" }
             p {
                 "Questions? Reach out at "
-                a { href: "mailto:mark.sagikazar@gmail.com", "mark.sagikazar@gmail.com" }
+                a { href: "mailto:dioxus-clerk-demo@sagikazarmark.com", "dioxus-clerk-demo@sagikazarmark.com" }
                 "."
             }
         }
@@ -90,7 +90,7 @@ pub fn TermsOfService() -> Element {
             h2 { "Contact" }
             p {
                 "Questions? Reach out at "
-                a { href: "mailto:mark.sagikazar@gmail.com", "mark.sagikazar@gmail.com" }
+                a { href: "mailto:dioxus-clerk-demo@sagikazarmark.com", "dioxus-clerk-demo@sagikazarmark.com" }
                 "."
             }
         }
