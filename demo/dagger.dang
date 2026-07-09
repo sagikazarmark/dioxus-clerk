@@ -1,14 +1,9 @@
 type Demo {
-  let envFile: File
   let jsEnv: JavascriptEnvironment!
   let dioxus: Dioxus!
   let workerBuild: WorkerBuild!
 
   new(ws: Workspace!) {
-    let envFile: File = Dagger
-      .envFile
-      .withVariable("CLERK_PUBLISHABLE_KEY", "pk_live_Y2xlcmsuY2xlcmstZGVtby5kaW94dXMuY2Mk")
-      .asFile
     let rustVersion = "1.96-trixie"
 
     # Shared base container: the official Rust image plus clang. clang is needed
@@ -27,9 +22,8 @@ type Demo {
 
     # TODO: lock js env version? Use bun directly?
     self.jsEnv = Dagger.javascriptEnvironment(install: true, locked: true)
-    self.dioxus = Dagger.dioxus(container: rustContainer, envFile: envFile)
-    self.workerBuild = Dagger.workerBuild(container: rustContainer, envFile: envFile)
-    self.envFile = envFile
+    self.dioxus = Dagger.dioxus(container: rustContainer)
+    self.workerBuild = Dagger.workerBuild(container: rustContainer)
 
     self
   }
@@ -93,9 +87,13 @@ type Worker {
   """
   Builds the Cloudflare Worker bundle.
   """
-  build(ws: Workspace!): Directory! @check {
+  build(
+    ws: Workspace!,
+    publishableKey: String! = "pk_test_c291bmQtY3JpY2tldC0yNy5jbGVyay5hY2NvdW50cy5kZXYk",
+  ): Directory! @check {
     let client = parent
       .dioxus
+      .withEnvVariable("CLERK_PUBLISHABLE_KEY", publishableKey)
       .bundle(
         parent.withAssets(ws),
         fullstack: false,
@@ -106,6 +104,7 @@ type Worker {
 
     let server = parent
       .workerBuild
+      .withEnvVariable("CLERK_PUBLISHABLE_KEY", publishableKey)
       .build(ws, args: ["--no-default-features", "--features", "worker"])
 
     Dagger
@@ -119,12 +118,13 @@ type Worker {
   Runs the Cloudflare Worker locally using `wrangler dev`.
   """
   dev(ws: Workspace!): Service! {
-    let envFile = parent.envFile
-    if (envFile == null) {
-      raise "envFile is missing"
-    }
-
-    Dagger.wrangler.dev(build(ws).withFile(".dev.vars", envFile))
+    Dagger.wrangler.dev(
+      build(ws, "pk_test_c291bmQtY3JpY2tldC0yNy5jbGVyay5hY2NvdW50cy5kZXYk")
+        .withFile(
+          ".dev.vars",
+          ws.file(".dev.vars"),
+        ),
+    )
   }
 
   deploy(
@@ -134,7 +134,7 @@ type Worker {
   ): Void @cache(policy: FunctionCachePolicy.Never) {
     Dagger
       .wrangler(accountId: cloudflareAccountId, apiToken: cloudflareApiToken)
-      .deploy(build(ws))
+      .deploy(build(ws, "pk_live_Y2xlcmsuY2xlcmstZGVtby5kaW94dXMuY2Mk"))
       .sync
 
     null
