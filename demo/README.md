@@ -53,10 +53,9 @@ See the [top-level Getting started](../README.md#getting-started) for the Rust t
 | `CLERK_PUBLISHABLE_KEY` | build time, via `env!` | Baked into both the wasm and server binaries — keep it consistent across the two halves. |
 | `CLERK_SECRET_KEY` | runtime, server only | Read by the native `serve()` block / Worker when constructing `ClerkAuthLayer`. Never reaches the wasm bundle. |
 
-Provide them by exporting into your shell, or — inside the **devenv** shell — by creating a `.env` in the repo root, which devenv's `dotenv` loads automatically. Copy [`.env.dist`](../.env.dist) as a starting point:
+Provide them by exporting into your shell, or by creating a `.env`. Copy [`.env.dist`](.env.dist) as a starting point:
 
 ```bash
-# from the repo root
 cp .env.dist .env   # then fill in pk_test_... / sk_test_...
 ```
 
@@ -85,27 +84,13 @@ dx serve --fullstack --features fullstack-web
 
 ## Run with Dagger
 
-Dagger builds and runs everything in containers — no local Node, `dx`, or Wrangler required. It reads the Clerk (and, for the Worker, Cloudflare) keys from a `.env` in the repo root, so **that file is required** for these commands:
+Dagger builds and runs everything in containers — no local Node, `dx`, or Wrangler required. It reads the Clerk (and, for the Worker, Cloudflare) keys from a `.env`, so **that file is required** for these commands:
 
 ```bash
 cd demo
 
-dagger call serve up        # native fullstack, tunnelled to a local port
+dagger up        # native fullstack, tunnelled to a local port
 dagger call worker dev up   # Cloudflare Worker via `wrangler dev`
-```
-
-`wrangler.toml` builds the static Dioxus bundle plus the Worker; Cloudflare serves static assets directly and invokes the Worker for `/api/*` only. To deploy the Worker (uses `CLOUDFLARE_*` from the repo-root `.env`):
-
-```bash
-dagger call worker deploy
-```
-
-Credentials can also be passed explicitly (this is what CI does):
-
-```bash
-dagger --env prod call worker deploy \
-  --account-id "$CLOUDFLARE_ACCOUNT_ID" \
-  --api-token env://CLOUDFLARE_API_TOKEN
 ```
 
 ## Build-only check
