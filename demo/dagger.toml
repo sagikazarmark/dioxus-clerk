@@ -7,3 +7,14 @@ envFile = ".env"
 
 [env.prod.modules.demo.settings]
 envFile = ".env.prod"
+
+# Clerk publishable key is necessary for build, but it doesn't have to be a real value
+[env.ci.modules.demo.settings]
+envFile = ".env.dist"
+
+[modules.dagger-gha]
+source = "github.com/sagikazarmark/daggerverse-beta/dagger-gha"
+
+[modules.dagger-gha.settings]
+daggerCommit = "86d1d2f5791bcf3213d56903cfa81a3ba0abe54a"
+env = "ci"

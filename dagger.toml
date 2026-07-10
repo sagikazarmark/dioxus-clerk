@@ -5,10 +5,15 @@ check.skip = ["audit"]
 [modules.rust.settings]
 version = "1.96.1-slim-trixie"
 
-
 [modules.wasm-pack]
 source = "github.com/sagikazarmark/daggerverse-beta/wasm-pack"
 
 [modules.wasm-pack.settings]
 rustVersion = "1.96.1-slim-trixie"
 defaultBrowsers = "CHROME"
+
+[modules.dagger-gha]
+source = "github.com/sagikazarmark/daggerverse-beta/dagger-gha"
+
+[modules.dagger-gha.settings]
+daggerCommit = "86d1d2f5791bcf3213d56903cfa81a3ba0abe54a"
