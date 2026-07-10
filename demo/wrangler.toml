@@ -3,6 +3,8 @@ main = "dist/worker/index.js"
 compatibility_date = "2026-05-30"
 
 send_metrics = false
+workers_dev = true
+preview_urls = true
 
 route = { pattern = "clerk-demo.dioxus.cc", custom_domain = true, zone_name = "dioxus.cc" }
 

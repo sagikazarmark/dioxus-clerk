@@ -11,7 +11,7 @@ The demo has two supported server modes:
 
 | Directory | Role |
 | --- | --- |
-| `src/examples/` | Small, pure components: one per feature. Mounted live *and* rendered as the on-page snippet. |
+| `src/examples/` | Small, pure components — one per feature. Mounted live *and* rendered as the on-page snippet. |
 | `src/pages/` | Route components: prose, docs links, setup callouts, and the example's source via `code!`. |
 | `src/app.rs` | Router (`Route`), the single `ClerkProvider`, and the header + grouped sidebar shell. |
 | `src/ui.rs` | Presentation-only helpers (`ExampleSection`, `SetupCallout`, …); no Clerk usage. |
@@ -50,40 +50,22 @@ See the [top-level Getting started](../README.md#getting-started) for the Rust t
 
 | Var | When this example reads it | Notes |
 | --- | --- | --- |
-| `CLERK_PUBLISHABLE_KEY` | build time, via `env!` | Baked into both the wasm and server binaries; keep it consistent across the two halves. |
+| `CLERK_PUBLISHABLE_KEY` | build time, via `env!` | Baked into both the wasm and server binaries — keep it consistent across the two halves. |
 | `CLERK_SECRET_KEY` | runtime, server only | Read by the native `serve()` block / Worker when constructing `ClerkAuthLayer`. Never reaches the wasm bundle. |
 
-How you provide these keys depends on how you run the demo:
-
-- **Local tools (`dx`, `wrangler`, `cargo`):** export them into your shell. Inside the **devenv** shell you can instead create a repo-root `.env`, which devenv's `dotenv` loads into your shell automatically. Copy [`.env.dist`](../.env.dist) as a starting point:
-
-  ```bash
-  # from the repo root
-  cp .env.dist .env   # then fill in pk_test_... / sk_test_...
-  ```
-
-- **Dagger:** it does not read your shell environment. It loads an **env file** instead — see below.
-
-### Env file
-
-Every Dagger entrypoint (`service`, `worker dev`, `worker deploy`, `build`) reads its environment from a single file, exposed as the `envFile` constructor parameter. It supplies `CLERK_PUBLISHABLE_KEY` (baked into both bundles at build time), `CLERK_SECRET_KEY`, and — for deploys — `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_API_TOKEN`. There is no built-in fallback key: the env file is required and must define `CLERK_PUBLISHABLE_KEY`.
-
-The parameter defaults to `.env` (configured in [`dagger.toml`](dagger.toml)), resolved relative to the `demo/` directory. Override it per invocation by passing `--env-file` before the function name — for example to deploy with production keys:
+Provide them by exporting into your shell, or — inside the **devenv** shell — by creating a `.env` in the repo root, which devenv's `dotenv` loads automatically. Copy [`.env.dist`](../.env.dist) as a starting point:
 
 ```bash
-dagger call --env-file .env.prod worker deploy
+# from the repo root
+cp .env.dist .env   # then fill in pk_test_... / sk_test_...
 ```
 
-## Run the demo (native fullstack)
-
-The default mode is the native Dioxus fullstack app: SSR plus Dioxus server functions.
-
-Pure Dioxus workflow:
+## Run locally
 
 ```bash
 cd demo
 
-# 1. Keys: skip if you use a repo-root .env under devenv
+# 1. Keys — skip if you use a repo-root .env under devenv
 export CLERK_PUBLISHABLE_KEY=pk_test_xxx
 export CLERK_SECRET_KEY=sk_test_xxx
 
@@ -99,57 +81,34 @@ dx serve --fullstack --features fullstack-web
 
 `--features fullstack-web` is required: this crate's plain `web` feature is the **Cloudflare-SPA** client (it reaches the backend by fetching the Worker's `/api/*` routes), while `fullstack-web` is the **native fullstack** client (it calls Dioxus server functions directly). Serving with just `dx serve` builds the SPA client, so the server-call page can't reach the local server function and returns `405 Method Not Allowed`.
 
-`dx serve` prints a URL once it's up. Rebuild the CSS whenever you change Tailwind classes, or keep `npm run watch` running alongside.
+`dx serve` prints a URL once it's up. Rebuild the CSS whenever you change Tailwind classes, or keep `npm run watch` running alongside. (Or skip all of this and use `dagger call serve up` below.)
 
-With Dagger, the four steps above collapse into one command. It builds the CSS, wasm, and server in containers (no local Node or `dx` needed) and tunnels the app to a local port. Instead of exported shell variables, Dagger loads its environment from an **env file** — the `envFile` constructor parameter, which defaults to `.env` (see [Env file](#env-file) below), so **that file is required**:
+## Run with Dagger
 
-```bash
-cd demo
-dagger up          # runs the `service` function: native fullstack, tunnelled to a local port
-```
-
-## Run the Cloudflare Worker locally
-
-The second mode serves the demo as a static Dioxus SPA plus explicit `/api/*` Worker routes.
-
-Pure workflow: build the styled static client and the Worker, arrange them under `dist/` (`dist/public` for the SPA assets and `dist/worker` for the Worker entry, as `wrangler.toml` points at), then run `wrangler dev`. This needs the `dx`, `worker-build`, and `wrangler` toolchains locally, plus the Clerk keys in `demo/.dev.vars`:
+Dagger builds and runs everything in containers — no local Node, `dx`, or Wrangler required. It reads the Clerk (and, for the Worker, Cloudflare) keys from a `.env` in the repo root, so **that file is required** for these commands:
 
 ```bash
 cd demo
-cp .dev.vars.dist .dev.vars    # then fill in pk_test_... / sk_test_...
 
-npm install && npm run build                                        # stylesheet
-dx bundle --platform web --release                                  # static SPA client
-worker-build --release -- --no-default-features --features worker   # Worker bundle
-# lay the two bundles out under dist/public and dist/worker, then:
-wrangler dev
+dagger call serve up        # native fullstack, tunnelled to a local port
+dagger call worker dev up   # Cloudflare Worker via `wrangler dev`
 ```
 
-Assembling `dist/` by hand is the fiddly part. Dagger builds both halves in containers, lays out `dist/`, and starts `wrangler dev` in one command (no local Node, `dx`, `worker-build`, or Wrangler needed), reading the keys from its [env file](#env-file) (default `.env`):
+`wrangler.toml` builds the static Dioxus bundle plus the Worker; Cloudflare serves static assets directly and invokes the Worker for `/api/*` only. To deploy the Worker (uses `CLOUDFLARE_*` from the repo-root `.env`):
 
 ```bash
-dagger call worker dev up
+dagger call worker deploy
 ```
 
-## Deploy the Cloudflare Worker
-
-Pure workflow: build into `dist/` as above, then push it to Cloudflare with your account credentials:
+Credentials can also be passed explicitly (this is what CI does):
 
 ```bash
-cd demo
-wrangler deploy    # uses CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_API_TOKEN
+dagger --env prod call worker deploy \
+  --account-id "$CLOUDFLARE_ACCOUNT_ID" \
+  --api-token env://CLOUDFLARE_API_TOKEN
 ```
 
-The Dagger equivalent builds and deploys in one step, reading `CLOUDFLARE_*` (and the `CLERK_*` keys baked into the bundle) from its [env file](#env-file). Point it at a production env file to deploy with live keys:
-
-```bash
-dagger call worker deploy                        # uses the default .env
-dagger call --env-file .env.prod worker deploy   # deploy with production keys
-```
-
-## Build-only checks
-
-Pure workflow — compile each target/feature combination without running:
+## Build-only check
 
 ```bash
 cd demo
@@ -163,12 +122,6 @@ cargo check --features server
 
 # Cloudflare Worker build.
 cargo check --no-default-features --features worker --target wasm32-unknown-unknown
-```
-
-Dagger runs the full demo build for both server modes as a single check:
-
-```bash
-dagger check       # runs demo:build and demo:worker:build
 ```
 
 ## Notes

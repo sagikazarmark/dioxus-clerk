@@ -3,4 +3,4 @@
 ["","container.from",["docker.io/library/node:latest","linux/arm64"],"sha256:926d6cafec97f338577041890465522f70fe74aa6fe4b021a4fd7f87a5996b25","pin"]
 ["","container.from",["docker.io/library/rust:1.96-trixie","linux/arm64"],"sha256:1f0dbad1df66647807e6952d1db85d0b2bda7606cb2139d82517e4f009967376","pin"]
 ["","container.from",["docker.io/oven/bun:latest","linux/arm64"],"sha256:e10577f0db68676a7024391c6e5cb4b879ebd17188ab750cf10024a6d700e5c4","pin"]
-["","git.head",["https://github.com/sagikazarmark/daggerverse-beta"],"f1a5c238cdfad4d75c6121a8c1f1cb334063e37e","float"]
+["","git.head",["https://github.com/sagikazarmark/daggerverse-beta"],"99fb6b361c3d9fb6d9bd02666874eb1c90e4fefa","float"]
