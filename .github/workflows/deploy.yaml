@@ -33,7 +33,7 @@ jobs:
         with:
           workdir: demo
           verb: call
-          dagger-flags: --env prod --lock pinned --progress plain
+          dagger-flags: --lock pinned --progress plain
           args: >-
             worker deploy
             --account-id ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
