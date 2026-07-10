@@ -125,18 +125,119 @@ type Worker {
   }
 
   """
-  Deploys the Cloudflare Worker (needs CLOUDFLARE_* credentials in the env).
+  Deploys the Cloudflare Worker.
   """
   deploy(
     ws: Workspace!,
-    cloudflareAccountId: String,
-    cloudflareApiToken: Secret,
+    """
+    Account ID for the Cloudflare account.
+    """
+    accountId: String!,
+    """
+    API token for the Cloudflare account.
+    """
+    apiToken: Secret!,
   ): Void @cache(policy: FunctionCachePolicy.Never) {
     Dagger
-      .wrangler(accountId: cloudflareAccountId, apiToken: cloudflareApiToken)
+      .wrangler(accountId: accountId, apiToken: apiToken)
       .deploy(build(ws))
       .sync
 
     null
+  }
+
+  """
+  Uploads a preview version of the Worker for a pull request.
+
+  The version is tagged with the short commit hash and aliased as `pr-<number>`.
+  It is not deployed to production.
+
+  The preview URLs are posted as a comment on the pull request (updating the
+  previous comment, if any). A failed comment does not fail the deployment.
+
+  Returns the wrangler output, which includes the version preview URL
+  and the preview alias URL.
+  """
+  deployPullRequest(
+    ws: Workspace!,
+    """
+    Pull request number.
+    """
+    pullRequest: Int!,
+    """
+    Commit hash the preview is built from.
+    """
+    commit: String!,
+    """
+    Account ID for the Cloudflare account.
+    """
+    accountId: String!,
+    """
+    API token for the Cloudflare account.
+    """
+    apiToken: Secret!,
+    """
+    GitHub token used to comment the preview URLs on the pull request.
+    """
+    githubToken: Secret!,
+    """
+    GitHub repository the pull request belongs to.
+    """
+    repository: String!,
+  ): String! @cache(policy: FunctionCachePolicy.Never) {
+    let shortSha = commit.truncate(7)
+    let alias = `pr-${toString(pullRequest)}`
+
+    let output = Dagger
+      .wrangler(accountId: accountId, apiToken: apiToken)
+      .versions
+      .upload(
+        build(ws),
+        tag: shortSha,
+        message: `Preview for PR #${toString(pullRequest)} (${shortSha})`,
+        previewAlias: alias,
+      )
+      .stdout
+
+    let body = [
+      "### ☁️ Cloudflare Workers preview",
+      "",
+      "| Deployment | URL |",
+      "| --- | --- |",
+      "| Commit (`" + shortSha + "`) | " + (previewUrl(output, "Version Preview URL:") ?? "n/a") + " |",
+      "| Pull request (`" + alias + "`) | " + (previewUrl(output, "Preview Alias URL:") ?? "n/a") + " |",
+    ].join("\n")
+
+    let comment = Dagger
+      .container
+      .from("alpine:3.24.1@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b")
+      .withExec(["apk", "add", "--no-cache", "github-cli"])
+      .withSecretVariable("GH_TOKEN", githubToken)
+      .withExec(
+        [
+          "gh", "pr", "comment", toString(pullRequest),
+          "--repo", repository,
+          "--body", body,
+          "--edit-last", "--create-if-none",
+        ],
+        expect: ReturnType.ANY,
+      )
+
+    if (comment.exitCode != 0) {
+      print("Failed to comment the preview URLs on the pull request: " + comment.stderr)
+    }
+
+    output
+  }
+
+  """
+  Extracts the URL from the wrangler output line with the given label.
+  """
+  let previewUrl(output: String!, label: String!): String {
+    output
+      .split("\n")
+      .find { line => line.contains(label) }
+      .{ if (_ != null) _!.match(`https://\S+`) }
+      .{ if (_ != null) _!.string }
   }
 }

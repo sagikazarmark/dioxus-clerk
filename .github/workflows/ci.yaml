@@ -20,18 +20,19 @@ jobs:
       matrix:
         workspace: [".", "demo"]
 
-    defaults:
-      run:
-        working-directory: ${{ matrix.workspace }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
+      - name: Create env file
+        working-directory: ${{ matrix.workspace }}
+        run: echo 'CLERK_PUBLISHABLE_KEY=${{ secrets.CLERK_PUBLISHABLE_KEY }}' > .env
+
       - name: Check
         uses: dagger/dagger-for-github@27b130bf0f79a7f6fbbbe0fbca6760dc9bb40a77 # v8.4.1
         with:
+          workdir: ${{ matrix.workspace }}
           verb: check
-          args: --lock pinned
+          dagger-flags: --lock pinned --progress plain
           # version: ${{ env.DAGGER_VERSION }}
           commit: ${{ env.DAGGER_VERSION }}
