@@ -46,8 +46,8 @@ jobs:
   preview:
     name: Deploy (preview)
     runs-on: ubuntu-latest
-    # Fork PRs have no access to the Cloudflare secrets.
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    # Fork and Dependabot PRs have no access to the Cloudflare secrets.
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
     concurrency:
       group: deploy-preview-${{ github.event.pull_request.number }}
       cancel-in-progress: true
