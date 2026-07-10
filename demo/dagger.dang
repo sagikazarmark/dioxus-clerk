@@ -155,7 +155,7 @@ type Worker {
   The preview URLs are posted as a comment on the pull request (updating the
   previous comment, if any). A failed comment does not fail the deployment.
 
-  Returns the wrangler output, which includes the version preview URL
+  Returns the upload metadata as JSON, which includes the version preview URL
   and the preview alias URL.
   """
   deployPullRequest(
@@ -188,7 +188,7 @@ type Worker {
     let shortSha = commit.truncate(7)
     let alias = `pr-${toString(pullRequest)}`
 
-    let output = Dagger
+    let upload = Dagger
       .wrangler(accountId: accountId, apiToken: apiToken)
       .versions
       .upload(
@@ -197,15 +197,14 @@ type Worker {
         message: `Preview for PR #${toString(pullRequest)} (${shortSha})`,
         previewAlias: alias,
       )
-      .stdout
 
     let body = [
       "### ☁️ Cloudflare Workers preview",
       "",
       "| Deployment | URL |",
       "| --- | --- |",
-      "| Commit (`" + shortSha + "`) | " + (previewUrl(output, "Version Preview URL:") ?? "n/a") + " |",
-      "| Pull request (`" + alias + "`) | " + (previewUrl(output, "Preview Alias URL:") ?? "n/a") + " |",
+      "| Commit (`" + shortSha + "`) | " + (upload.previewUrl ?? "n/a") + " |",
+      "| Pull request (`" + alias + "`) | " + (upload.previewAliasUrl ?? "n/a") + " |",
     ].join("\n")
 
     let comment = Dagger
@@ -227,17 +226,6 @@ type Worker {
       print("Failed to comment the preview URLs on the pull request: " + comment.stderr)
     }
 
-    output
-  }
-
-  """
-  Extracts the URL from the wrangler output line with the given label.
-  """
-  let previewUrl(output: String!, label: String!): String {
-    output
-      .split("\n")
-      .find { line => line.contains(label) }
-      .{ if (_ != null) _!.match(`https://\S+`) }
-      .{ if (_ != null) _!.string }
+    JSON.encode(upload)
   }
 }
