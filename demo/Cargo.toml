@@ -12,11 +12,6 @@ dioxus-clerk = { path = ".." }
 
 axum = { version = "0.8", default-features = false, features = ["json"], optional = true }
 dioxus = { version = "0.7", default-features = false, features = ["asset", "document", "html", "hooks", "macro", "router", "signals"] }
-# Compile-time syntax highlighting for the on-page source snippets. The `code!`
-# macro embeds a pre-highlighted span tree at build time (no runtime
-# highlighter), so it adds no meaningful weight to the size-tuned wasm bundle.
-# Only pulled into the web/server builds; the Worker library build never renders
-# pages, so it is left out of the `worker` feature.
 dioxus-code = { version = "0.1.2", optional = true }
 dioxus-free-icons = { version = "0.10", features = ["font-awesome-brands"] }
 dioxus-server = { version = "0.7", optional = true }
