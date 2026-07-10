@@ -1,13 +1,11 @@
-let DEV_PUBLISHABLE_KEY = "pk_test_c291bmQtY3JpY2tldC0yNy5jbGVyay5hY2NvdW50cy5kZXYk"
-
 type Demo {
   let jsEnv: JavascriptEnvironment!
   let dioxus: Dioxus!
   let workerBuild: WorkerBuild!
+  let envFile: File
 
-  new(ws: Workspace!) {
+  new(ws: Workspace!, envFile: File) {
     let rustVersion = "1.96-trixie"
-    let envFile = ws.findUp(".env").{ if (_ != null) ws.file(_) }
 
     # Shared base container: the official Rust image plus clang. clang is needed
     # to cross-compile the C sysroot pulled in by the `dioxus-code` snippet
@@ -27,26 +25,20 @@ type Demo {
     self.jsEnv = Dagger.javascriptEnvironment(install: true, locked: true)
     self.dioxus = Dagger.dioxus(container: rustContainer, envFile: envFile)
     self.workerBuild = Dagger.workerBuild(container: rustContainer, envFile: envFile)
+    self.envFile = envFile
 
     self
-  }
-
-  let getDioxus(publishableKey: String): Dioxus! {
-    self.dioxus.withEnvVariable("CLERK_PUBLISHABLE_KEY", publishableKey ?? DEV_PUBLISHABLE_KEY)
-  }
-
-  let getWorkerBuild(publishableKey: String): WorkerBuild! {
-    self.workerBuild.withEnvVariable("CLERK_PUBLISHABLE_KEY", publishableKey ?? DEV_PUBLISHABLE_KEY)
   }
 
   let withAssets(ws: Workspace!): Workspace! {
     let assets = self.jsEnv.withRun(ws, "build").directory("assets")
 
-    # TODO: need better way to pass module outputs to other modules
+    # DAGGER_TODO: need better way to pass module outputs to other modules
     let dir = ws
       .directory("/", gitignore: true)
       .withDirectory(ws.cwd + "/assets", assets)
 
+    # DAGGER_TODO:
     # assets is normally ignored by git
     # so adding it back causes it to be ignored next time workspace is called
     dir = dir
@@ -61,9 +53,9 @@ type Demo {
   """
   Build the Dioxus demo application.
   """
-  build(ws: Workspace!, publishableKey: String): Directory! @check {
+  build(ws: Workspace!): Directory! @check {
     self
-      .getDioxus(publishableKey)
+      .dioxus
       .bundle(
         self.withAssets(ws),
         fullstack: true,
@@ -77,7 +69,7 @@ type Demo {
   Serve the Dioxus demo application.
   """
   service(ws: Workspace!): Service! @up {
-    self.getDioxus(null).serve(
+    self.dioxus.serve(
       self.withAssets(ws),
       fullstack: true,
       clientArgs: ["--features", "fullstack-web"],
@@ -98,9 +90,9 @@ type Worker {
   """
   Builds the Cloudflare Worker bundle.
   """
-  build(ws: Workspace!, publishableKey: String): Directory! @check {
+  build(ws: Workspace!): Directory! @check {
     let client = parent
-      .getDioxus(publishableKey)
+      .dioxus
       .bundle(
         parent.withAssets(ws),
         fullstack: false,
@@ -110,7 +102,7 @@ type Worker {
       )
 
     let server = parent
-      .getWorkerBuild(publishableKey)
+      .workerBuild
       .build(ws, args: ["--no-default-features", "--features", "worker"])
 
     Dagger
@@ -124,7 +116,12 @@ type Worker {
   Runs the Cloudflare Worker locally using `wrangler dev`.
   """
   dev(ws: Workspace!): Service! {
-    Dagger.wrangler.dev(build(ws).withFile(".dev.vars", ws.file(".dev.vars")))
+    Dagger.wrangler.dev(build(ws)
+      .{
+        if (parent.envFile != null) {
+          _.withFile(".dev.vars", parent.envFile!)
+        } else _
+      })
   }
 
   deploy(
@@ -134,7 +131,7 @@ type Worker {
   ): Void @cache(policy: FunctionCachePolicy.Never) {
     Dagger
       .wrangler(accountId: cloudflareAccountId, apiToken: cloudflareApiToken)
-      .deploy(build(ws, "pk_live_Y2xlcmsuY2xlcmstZGVtby5kaW94dXMuY2Mk"))
+      .deploy(build(ws))
       .sync
 
     null

@@ -53,11 +53,25 @@ See the [top-level Getting started](../README.md#getting-started) for the Rust t
 | `CLERK_PUBLISHABLE_KEY` | build time, via `env!` | Baked into both the wasm and server binaries; keep it consistent across the two halves. |
 | `CLERK_SECRET_KEY` | runtime, server only | Read by the native `serve()` block / Worker when constructing `ClerkAuthLayer`. Never reaches the wasm bundle. |
 
-Provide them by exporting into your shell, or (inside the **devenv** shell) by creating a `.env` in the repo root, which devenv's `dotenv` loads automatically. Copy [`.env.dist`](../.env.dist) as a starting point:
+How you provide these keys depends on how you run the demo:
+
+- **Local tools (`dx`, `wrangler`, `cargo`):** export them into your shell. Inside the **devenv** shell you can instead create a repo-root `.env`, which devenv's `dotenv` loads into your shell automatically. Copy [`.env.dist`](../.env.dist) as a starting point:
+
+  ```bash
+  # from the repo root
+  cp .env.dist .env   # then fill in pk_test_... / sk_test_...
+  ```
+
+- **Dagger:** it does not read your shell environment. It loads an **env file** instead — see below.
+
+### Env file
+
+Every Dagger entrypoint (`service`, `worker dev`, `worker deploy`, `build`) reads its environment from a single file, exposed as the `envFile` constructor parameter. It supplies `CLERK_PUBLISHABLE_KEY` (baked into both bundles at build time), `CLERK_SECRET_KEY`, and — for deploys — `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_API_TOKEN`. There is no built-in fallback key: the env file is required and must define `CLERK_PUBLISHABLE_KEY`.
+
+The parameter defaults to `.env` (configured in [`dagger.toml`](dagger.toml)), resolved relative to the `demo/` directory. Override it per invocation by passing `--env-file` before the function name — for example to deploy with production keys:
 
 ```bash
-# from the repo root
-cp .env.dist .env   # then fill in pk_test_... / sk_test_...
+dagger call --env-file .env.prod worker deploy
 ```
 
 ## Run the demo (native fullstack)
@@ -87,7 +101,7 @@ dx serve --fullstack --features fullstack-web
 
 `dx serve` prints a URL once it's up. Rebuild the CSS whenever you change Tailwind classes, or keep `npm run watch` running alongside.
 
-With Dagger, the four steps above collapse into one command. It builds the CSS, wasm, and server in containers (no local Node or `dx` needed) and tunnels the app to a local port, reading the Clerk keys from a repo-root `.env`, so **that file is required**:
+With Dagger, the four steps above collapse into one command. It builds the CSS, wasm, and server in containers (no local Node or `dx` needed) and tunnels the app to a local port. Instead of exported shell variables, Dagger loads its environment from an **env file** — the `envFile` constructor parameter, which defaults to `.env` (see [Env file](#env-file) below), so **that file is required**:
 
 ```bash
 cd demo
@@ -111,7 +125,7 @@ worker-build --release -- --no-default-features --features worker   # Worker bun
 wrangler dev
 ```
 
-Assembling `dist/` by hand is the fiddly part. Dagger builds both halves in containers, lays out `dist/`, and starts `wrangler dev` in one command (no local Node, `dx`, `worker-build`, or Wrangler needed), reading the keys from the repo-root `.env`:
+Assembling `dist/` by hand is the fiddly part. Dagger builds both halves in containers, lays out `dist/`, and starts `wrangler dev` in one command (no local Node, `dx`, `worker-build`, or Wrangler needed), reading the keys from its [env file](#env-file) (default `.env`):
 
 ```bash
 dagger call worker dev up
@@ -126,10 +140,11 @@ cd demo
 wrangler deploy    # uses CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_API_TOKEN
 ```
 
-The Dagger equivalent builds and deploys in one step, reading `CLOUDFLARE_*` from the repo-root `.env`:
+The Dagger equivalent builds and deploys in one step, reading `CLOUDFLARE_*` (and the `CLERK_*` keys baked into the bundle) from its [env file](#env-file). Point it at a production env file to deploy with live keys:
 
 ```bash
-dagger call worker deploy
+dagger call worker deploy                        # uses the default .env
+dagger call --env-file .env.prod worker deploy   # deploy with production keys
 ```
 
 ## Build-only checks

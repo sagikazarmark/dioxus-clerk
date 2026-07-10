@@ -10,6 +10,3 @@ devenv.local.yaml
 .pre-commit-config.yaml
 
 target/
-
-.env
-.dev.vars
