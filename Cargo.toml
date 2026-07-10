@@ -1,6 +1,6 @@
 [package]
 name = "dioxus-clerk"
-version = "0.1.0"
+version = "0.2.0"
 description = "Clerk integration for Dioxus: components, hooks, and SSR initial state for web and fullstack apps"
 edition = "2024"
 rust-version = "1.92"
