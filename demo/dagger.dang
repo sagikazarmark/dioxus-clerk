@@ -124,6 +124,9 @@ type Worker {
       })
   }
 
+  """
+  Deploys the Cloudflare Worker (needs CLOUDFLARE_* credentials in the env).
+  """
   deploy(
     ws: Workspace!,
     cloudflareAccountId: String,
