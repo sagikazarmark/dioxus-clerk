@@ -121,7 +121,14 @@ export CLERK_SECRET_KEY=sk_test_xxx
 
 Because `env!` resolves at build time, the same value must be present when the wasm and server halves of a fullstack app are compiled. `dx serve` handles this automatically. If clerk-js init fails at runtime (bad key, dashboard origin not whitelisted, network), `use_clerk_error()` exposes the failure so apps can render an error UI instead of staying stuck on `Loading`.
 
-See [`demo/README.md`](demo/README.md) for full run instructions. The demo combines the minimal SPA, router, and fullstack server-function flows into one app.
+To run the whole demo in containers without a local Node/`dx` toolchain, use Dagger instead (it reads the keys from a repo-root `.env`):
+
+```bash
+cd demo
+dagger up
+```
+
+See [`demo/README.md`](demo/README.md) for full run instructions, the Cloudflare Worker mode, and the matching Dagger commands. The demo combines the minimal SPA, router, and fullstack server-function flows into one app.
 
 ## Quickstart (web-only SPA)
 
@@ -455,6 +462,39 @@ async fn private_handler(auth: ClerkAuth) -> String {
 async fn public_handler(auth: Option<ClerkAuth>) -> String {
     auth.map(|auth| auth.user_id).unwrap_or_else(|| "anonymous".into())
 }
+```
+
+## Development
+
+The crate targets both native (`server`) and wasm (`web`) builds, so the checks
+span two targets. The pure Rust/Dioxus workflow needs the toolchain pinned in
+[`rust-toolchain.toml`](rust-toolchain.toml) with the `wasm32-unknown-unknown`
+target and `wasm-pack`:
+
+```bash
+# Format and lint
+cargo fmt
+cargo clippy --all-targets
+
+# Build both halves: native/server and web (wasm)
+cargo build --features server
+cargo build --target wasm32-unknown-unknown
+
+# Build the docs
+cargo doc --no-deps
+
+# Run the native + integration tests
+cargo test
+
+# Run the wasm-bindgen browser tests
+wasm-pack test --headless --chrome
+```
+
+Dagger runs the same build, clippy, doc, test, and wasm-pack checks in pinned
+containers with a single command — this is exactly what CI runs:
+
+```bash
+dagger check
 ```
 
 ## License

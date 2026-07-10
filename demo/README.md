@@ -60,7 +60,11 @@ Provide them by exporting into your shell, or (inside the **devenv** shell) by c
 cp .env.dist .env   # then fill in pk_test_... / sk_test_...
 ```
 
-## Run locally
+## Run the demo (native fullstack)
+
+The default mode is the native Dioxus fullstack app: SSR plus Dioxus server functions.
+
+Pure Dioxus workflow:
 
 ```bash
 cd demo
@@ -81,26 +85,56 @@ dx serve --fullstack --features fullstack-web
 
 `--features fullstack-web` is required: this crate's plain `web` feature is the **Cloudflare-SPA** client (it reaches the backend by fetching the Worker's `/api/*` routes), while `fullstack-web` is the **native fullstack** client (it calls Dioxus server functions directly). Serving with just `dx serve` builds the SPA client, so the server-call page can't reach the local server function and returns `405 Method Not Allowed`.
 
-`dx serve` prints a URL once it's up. Rebuild the CSS whenever you change Tailwind classes, or keep `npm run watch` running alongside. (Or skip all of this and use `dagger call serve up` below.)
+`dx serve` prints a URL once it's up. Rebuild the CSS whenever you change Tailwind classes, or keep `npm run watch` running alongside.
 
-## Run with Dagger
-
-Dagger builds and runs everything in containers: no local Node, `dx`, or Wrangler required. It reads the Clerk (and, for the Worker, Cloudflare) keys from a `.env` in the repo root, so **that file is required** for these commands:
+With Dagger, the four steps above collapse into one command. It builds the CSS, wasm, and server in containers (no local Node or `dx` needed) and tunnels the app to a local port, reading the Clerk keys from a repo-root `.env`, so **that file is required**:
 
 ```bash
 cd demo
-
-dagger call serve up        # native fullstack, tunnelled to a local port
-dagger call worker dev up   # Cloudflare Worker via `wrangler dev`
+dagger up          # runs the `service` function: native fullstack, tunnelled to a local port
 ```
 
-`wrangler.toml` builds the static Dioxus bundle plus the Worker; Cloudflare serves static assets directly and invokes the Worker for `/api/*` only. To deploy the Worker (uses `CLOUDFLARE_*` from the repo-root `.env`):
+## Run the Cloudflare Worker locally
+
+The second mode serves the demo as a static Dioxus SPA plus explicit `/api/*` Worker routes.
+
+Pure workflow: build the styled static client and the Worker, arrange them under `dist/` (`dist/public` for the SPA assets and `dist/worker` for the Worker entry, as `wrangler.toml` points at), then run `wrangler dev`. This needs the `dx`, `worker-build`, and `wrangler` toolchains locally, plus the Clerk keys in `demo/.dev.vars`:
+
+```bash
+cd demo
+cp .dev.vars.dist .dev.vars    # then fill in pk_test_... / sk_test_...
+
+npm install && npm run build                                        # stylesheet
+dx bundle --platform web --release                                  # static SPA client
+worker-build --release -- --no-default-features --features worker   # Worker bundle
+# lay the two bundles out under dist/public and dist/worker, then:
+wrangler dev
+```
+
+Assembling `dist/` by hand is the fiddly part. Dagger builds both halves in containers, lays out `dist/`, and starts `wrangler dev` in one command (no local Node, `dx`, `worker-build`, or Wrangler needed), reading the keys from the repo-root `.env`:
+
+```bash
+dagger call worker dev up
+```
+
+## Deploy the Cloudflare Worker
+
+Pure workflow: build into `dist/` as above, then push it to Cloudflare with your account credentials:
+
+```bash
+cd demo
+wrangler deploy    # uses CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_API_TOKEN
+```
+
+The Dagger equivalent builds and deploys in one step, reading `CLOUDFLARE_*` from the repo-root `.env`:
 
 ```bash
 dagger call worker deploy
 ```
 
-## Build-only check
+## Build-only checks
+
+Pure workflow — compile each target/feature combination without running:
 
 ```bash
 cd demo
@@ -114,6 +148,12 @@ cargo check --features server
 
 # Cloudflare Worker build.
 cargo check --no-default-features --features worker --target wasm32-unknown-unknown
+```
+
+Dagger runs the full demo build for both server modes as a single check:
+
+```bash
+dagger check       # runs demo:build and demo:worker:build
 ```
 
 ## Notes
