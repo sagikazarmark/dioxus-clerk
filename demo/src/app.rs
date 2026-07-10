@@ -2,6 +2,8 @@
 
 use dioxus::prelude::*;
 use dioxus_clerk::*;
+use dioxus_free_icons::icons::fa_brands_icons::FaGithub;
+use dioxus_free_icons::Icon;
 
 use crate::pages::*;
 
@@ -159,6 +161,15 @@ fn Header() -> Element {
                     }
                 }
                 div { class: "flex shrink-0 items-center gap-2",
+                    a {
+                        class: "btn btn-ghost btn-sm btn-circle",
+                        href: "https://github.com/sagikazarmark/dioxus-clerk",
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                        "aria-label": "View dioxus-clerk on GitHub",
+                        title: "View on GitHub",
+                        Icon { width: 20, height: 20, icon: FaGithub }
+                    }
                     SignedOutWhenLoaded {
                         // Labeled (disabled) placeholder while clerk-js loads, so
                         // the header reads as a "Sign in" button rather than a

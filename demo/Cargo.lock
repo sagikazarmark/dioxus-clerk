@@ -1058,6 +1058,7 @@ dependencies = [
  "dioxus-config-macros",
  "dioxus-core",
  "dioxus-core-macro",
+ "dioxus-devtools",
  "dioxus-document",
  "dioxus-fullstack",
  "dioxus-fullstack-macro",
@@ -1065,6 +1066,7 @@ dependencies = [
  "dioxus-hooks",
  "dioxus-html",
  "dioxus-liveview",
+ "dioxus-logger",
  "dioxus-router",
  "dioxus-server",
  "dioxus-signals",
@@ -1134,6 +1136,7 @@ dependencies = [
  "dioxus",
  "dioxus-clerk",
  "dioxus-code",
+ "dioxus-free-icons",
  "dioxus-server",
  "gloo-net",
  "serde_json",
@@ -1284,6 +1287,15 @@ dependencies = [
  "serde",
  "serde_json",
  "tracing",
+]
+
+[[package]]
+name = "dioxus-free-icons"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "28d356e0f9edad0930bc1cc76744360c0ecca020cb943acaadf42cb774f28284"
+dependencies = [
+ "dioxus",
 ]
 
 [[package]]
