@@ -491,7 +491,7 @@ wasm-pack test --headless --chrome
 ```
 
 Dagger runs the same build, clippy, doc, test, and wasm-pack checks in pinned
-containers with a single command — this is exactly what CI runs:
+containers with a single command; this is exactly what CI runs:
 
 ```bash
 dagger check
