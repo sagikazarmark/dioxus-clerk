@@ -121,7 +121,7 @@ export CLERK_SECRET_KEY=sk_test_xxx
 
 Because `env!` resolves at build time, the same value must be present when the wasm and server halves of a fullstack app are compiled. `dx serve` handles this automatically. If clerk-js init fails at runtime (bad key, dashboard origin not whitelisted, network), `use_clerk_error()` exposes the failure so apps can render an error UI instead of staying stuck on `Loading`.
 
-To run the whole demo in containers without a local Node/`dx` toolchain, use Dagger instead (it reads the keys from a repo-root `.env`):
+To run the whole demo in containers without a local Node/`dx` toolchain, use Dagger instead (it reads the keys from a `.env` file):
 
 ```bash
 cd demo
