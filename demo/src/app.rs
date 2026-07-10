@@ -157,7 +157,6 @@ fn Header() -> Element {
                     span { class: "grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-primary text-sm font-bold text-primary-content shadow-sm", "dc" }
                     span { class: "min-w-0",
                         span { class: "block truncate text-sm font-semibold tracking-tight", "dioxus-clerk" }
-                        span { class: "hidden text-xs text-base-content/60 sm:block", "Docs by example" }
                     }
                 }
                 div { class: "flex shrink-0 items-center gap-2",
