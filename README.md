@@ -1,6 +1,6 @@
 # dioxus-clerk
 
-[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/sagikazarmark/dioxus-clerk/ci.yaml?style=flat-square)](https://github.com/sagikazarmark/dioxus-clerk/actions/workflows/ci.yaml)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/sagikazarmark/dioxus-clerk/dagger.yaml?style=flat-square)](https://github.com/sagikazarmark/dioxus-clerk/actions/workflows/dagger.yaml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/sagikazarmark/dioxus-clerk/badge?style=flat-square)](https://securityscorecards.dev/viewer/?uri=github.com/sagikazarmark/dioxus-clerk)
 [![Crates.io](https://img.shields.io/crates/v/dioxus-clerk?style=flat-square)](https://crates.io/crates/dioxus-clerk)
 [![docs.rs](https://img.shields.io/docsrs/dioxus-clerk?style=flat-square)](https://docs.rs/dioxus-clerk)
