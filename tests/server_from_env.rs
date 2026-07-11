@@ -16,16 +16,20 @@ static ENV_LOCK: Mutex<()> = Mutex::new(());
 fn with_env(value: Option<&str>, test: impl FnOnce()) {
     let _guard = ENV_LOCK.lock().unwrap();
     let previous = std::env::var(ENV_KEY).ok();
+    // SAFETY: all env mutation in this binary goes through `with_env`, which
+    // holds `ENV_LOCK`, so no other thread reads or writes the environment
+    // concurrently.
     match value {
-        Some(value) => std::env::set_var(ENV_KEY, value),
-        None => std::env::remove_var(ENV_KEY),
+        Some(value) => unsafe { std::env::set_var(ENV_KEY, value) },
+        None => unsafe { std::env::remove_var(ENV_KEY) },
     }
 
     test();
 
+    // SAFETY: same as above; `ENV_LOCK` is still held.
     match previous {
-        Some(previous) => std::env::set_var(ENV_KEY, previous),
-        None => std::env::remove_var(ENV_KEY),
+        Some(previous) => unsafe { std::env::set_var(ENV_KEY, previous) },
+        None => unsafe { std::env::remove_var(ENV_KEY) },
     }
 }
 

@@ -5,7 +5,7 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use dioxus_clerk::server::{ClerkAuthLayer, ClerkAuthLayerConfig, VerificationOutcome};
 use tower_service::Service;
-use worker::{event, Context, Env, Error, HttpRequest, Result};
+use worker::{Context, Env, Error, HttpRequest, Result, event};
 
 #[event(fetch)]
 async fn fetch(

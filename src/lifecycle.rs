@@ -77,10 +77,10 @@ pub(crate) fn use_drive_lifecycle(
         let publishable_key = publishable_key.clone();
         let script_options = script_options.clone();
         move || {
-            if script_options.load_clerk_js {
-                if let Some(key) = publishable_key {
-                    inject_script(&key, &script_options.script);
-                }
+            if script_options.load_clerk_js
+                && let Some(key) = publishable_key
+            {
+                inject_script(&key, &script_options.script);
             }
         }
     });

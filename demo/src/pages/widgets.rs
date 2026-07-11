@@ -1,12 +1,12 @@
 use dioxus::prelude::*;
-use dioxus_code::{code, Code};
+use dioxus_code::{Code, code};
 
 use crate::examples::embedded_signin::EmbeddedSignInExample;
 use crate::examples::embedded_signup::EmbeddedSignUpExample;
 use crate::examples::profile_avatar::ProfileAvatarExample;
 use crate::examples::profile_button::ProfileButtonExample;
 use crate::examples::profile_embedded::ProfileEmbeddedExample;
-use crate::ui::{snippet_theme, DocLink, ExampleSection, InlineCode, PageHeader};
+use crate::ui::{DocLink, ExampleSection, InlineCode, PageHeader, snippet_theme};
 
 #[component]
 pub fn SignInPage() -> Element {

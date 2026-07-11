@@ -1,9 +1,11 @@
 use dioxus::prelude::*;
 use dioxus_clerk::*;
-use dioxus_code::{code, Code};
+use dioxus_code::{Code, code};
 
 use crate::examples::server_call::ServerCallExample;
-use crate::ui::{snippet_theme, CheckingAuthPanel, DocLink, ExampleSection, InlineCode, PageHeader};
+use crate::ui::{
+    CheckingAuthPanel, DocLink, ExampleSection, InlineCode, PageHeader, snippet_theme,
+};
 
 #[component]
 pub fn ServerDemo() -> Element {

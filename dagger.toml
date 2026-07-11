@@ -3,13 +3,13 @@ source = "github.com/sagikazarmark/daggerverse-beta/rust"
 check.skip = ["audit"]
 
 [modules.rust.settings]
-version = "1.96.1-slim-trixie"
+version = "1.97-slim-trixie"
 
 [modules.wasm-pack]
 source = "github.com/sagikazarmark/daggerverse-beta/wasm-pack"
 
 [modules.wasm-pack.settings]
-rustVersion = "1.96.1-slim-trixie"
+rustVersion = "1.97-slim-trixie"
 defaultBrowsers = "CHROME"
 
 [modules.dagger-gha]

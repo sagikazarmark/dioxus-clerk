@@ -394,10 +394,10 @@ fn millis_value(value: &JsValue) -> Option<i64> {
     // A numeric string (e.g. `"1720000000000"`) is epoch millis, not a date
     // string: `Date::new` would parse a short one as a bare year. Try an
     // integer parse before falling back to date-string parsing.
-    if let Some(text) = value.as_string() {
-        if let Ok(millis) = text.trim().parse::<i64>() {
-            return Some(millis);
-        }
+    if let Some(text) = value.as_string()
+        && let Ok(millis) = text.trim().parse::<i64>()
+    {
+        return Some(millis);
     }
 
     let millis = Date::new(value).get_time();
