@@ -24,7 +24,7 @@ mod ui;
 fn main() {
     #[cfg(feature = "server")]
     {
-        use dioxus::server::{axum, serve, DioxusRouterExt, ServeConfig};
+        use dioxus::server::{DioxusRouterExt, ServeConfig, axum, serve};
         serve(|| async move {
             Ok(axum::Router::new()
                 .serve_dioxus_application(ServeConfig::new(), app::App)

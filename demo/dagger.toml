@@ -3,6 +3,7 @@ source = "."
 entrypoint = true
 
 [modules.demo.settings]
+rustVersion = "1.97-trixie"
 envFile = ".env"
 
 [env.prod.modules.demo.settings]
@@ -18,3 +19,4 @@ source = "github.com/sagikazarmark/daggerverse-beta/dagger-gha"
 [modules.dagger-gha.settings]
 daggerCommit = "86d1d2f5791bcf3213d56903cfa81a3ba0abe54a"
 env = "ci"
+lock = '"PINNED"'

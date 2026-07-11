@@ -1102,7 +1102,7 @@ dependencies = [
 
 [[package]]
 name = "dioxus-clerk"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axum",
  "axum-extra 0.12.6",

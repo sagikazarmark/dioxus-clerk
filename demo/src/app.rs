@@ -2,8 +2,8 @@
 
 use dioxus::prelude::*;
 use dioxus_clerk::*;
-use dioxus_free_icons::icons::fa_brands_icons::FaGithub;
 use dioxus_free_icons::Icon;
+use dioxus_free_icons::icons::fa_brands_icons::FaGithub;
 
 use crate::pages::*;
 

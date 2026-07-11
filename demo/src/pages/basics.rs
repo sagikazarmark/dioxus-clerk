@@ -1,11 +1,11 @@
 use dioxus::prelude::*;
 use dioxus_clerk::*;
-use dioxus_code::{code, Code};
+use dioxus_code::{Code, code};
 
 use crate::app::Route;
 use crate::examples::buttons::ButtonsExample;
 use crate::examples::minimal::MinimalExample;
-use crate::ui::{snippet_theme, DocLink, ExampleSection, InlineCode, PageHeader};
+use crate::ui::{DocLink, ExampleSection, InlineCode, PageHeader, snippet_theme};
 
 #[component]
 pub fn Home() -> Element {

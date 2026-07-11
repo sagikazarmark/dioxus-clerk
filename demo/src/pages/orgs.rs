@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_code::{code, Code};
+use dioxus_code::{Code, code};
 
 use crate::examples::org_create::OrgCreateExample;
 use crate::examples::org_list::OrgListExample;
@@ -7,7 +7,7 @@ use crate::examples::org_profile::OrgProfileExample;
 use crate::examples::org_protect::OrgProtectExample;
 use crate::examples::org_switcher::OrgSwitcherExample;
 use crate::examples::waitlist::WaitlistExample;
-use crate::ui::{snippet_theme, DocLink, ExampleSection, InlineCode, PageHeader, SetupCallout};
+use crate::ui::{DocLink, ExampleSection, InlineCode, PageHeader, SetupCallout, snippet_theme};
 
 #[component]
 pub fn Organizations() -> Element {

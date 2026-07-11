@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use dioxus_clerk::*;
-use dioxus_code::{code, Code};
+use dioxus_code::{Code, code};
 
 use crate::examples::errors::ErrorsExample;
 use crate::examples::gating::GatingExample;
@@ -8,7 +8,9 @@ use crate::examples::hooks::HooksExample;
 use crate::examples::imperative::ImperativeExample;
 use crate::examples::reverification::ReverificationExample;
 use crate::examples::session_tasks::SessionTasksExample;
-use crate::ui::{snippet_theme, CheckingAuthPanel, DocLink, ExampleSection, InlineCode, PageHeader};
+use crate::ui::{
+    CheckingAuthPanel, DocLink, ExampleSection, InlineCode, PageHeader, snippet_theme,
+};
 
 #[component]
 pub fn Gating() -> Element {

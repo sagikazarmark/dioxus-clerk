@@ -79,7 +79,7 @@ async fn fetch_u64(url: &str) -> Result<u64, String> {
 /// `VerificationOutcome` that `ClerkAuthLayer` inserted) and echoes the user id.
 #[cfg(feature = "server")]
 pub fn whoami_router() -> dioxus::server::axum::Router {
-    use dioxus::server::axum::{routing::get, Router};
+    use dioxus::server::axum::{Router, routing::get};
     Router::new().route("/api/whoami", get(whoami_handler))
 }
 
