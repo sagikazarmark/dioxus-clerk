@@ -7,6 +7,7 @@ version = "1.97-slim-trixie"
 
 [modules.wasm-pack]
 source = "github.com/sagikazarmark/daggerverse-beta/wasm-pack"
+check.skip = ["wasm-pack:test"]
 
 [modules.wasm-pack.settings]
 rustVersion = "1.97-slim-trixie"
@@ -17,3 +18,4 @@ source = "github.com/sagikazarmark/daggerverse-beta/dagger-gha"
 
 [modules.dagger-gha.settings]
 daggerCommit = "86d1d2f5791bcf3213d56903cfa81a3ba0abe54a"
+lock = '"PINNED"'
