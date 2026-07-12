@@ -2,10 +2,10 @@
 
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/sagikazarmark/dioxus-clerk/dagger.yaml?style=flat-square)](https://github.com/sagikazarmark/dioxus-clerk/actions/workflows/dagger.yaml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/sagikazarmark/dioxus-clerk/badge?style=flat-square)](https://securityscorecards.dev/viewer/?uri=github.com/sagikazarmark/dioxus-clerk)
-[![Crates.io](https://img.shields.io/crates/v/dioxus-clerk?style=flat-square)](https://crates.io/crates/dioxus-clerk)
+[![crates.io](https://img.shields.io/crates/v/dioxus-clerk?style=flat-square)](https://crates.io/crates/dioxus-clerk)
 [![docs.rs](https://img.shields.io/docsrs/dioxus-clerk?style=flat-square)](https://docs.rs/dioxus-clerk)
 
-**Clerk auth for [Dioxus](https://dioxuslabs.com)**: components, hooks, server-fn context reading, and SSR initial state for fullstack apps.
+**Clerk integration for [Dioxus](https://dioxuslabs.com): components, hooks, and SSR initial state for web and fullstack apps.**
 
 ## Features
 
@@ -26,20 +26,20 @@ semantics do not fit Dioxus well, this crate chooses the Dioxus-native design
 and documents the difference. See [Migrating from Clerk
 React](docs/react-migration.md) for the full mapping.
 
-## Installation
+## Getting started
 
 Most apps depend on `dioxus-clerk` directly:
 
 ```toml
 [dependencies]
-dioxus-clerk = "0.1"
+dioxus-clerk = "0.2"
 ```
 
 Fullstack apps enable the `server` feature on the native server build:
 
 ```toml
 [dependencies]
-dioxus-clerk = "0.1"
+dioxus-clerk = "0.2"
 
 [features]
 default = []
@@ -54,8 +54,6 @@ server = ["dioxus-clerk/server"]
 | *(none)* | ✅ | Client components, hooks, guards, Clerk widgets, and SSR initial-state consumption. |
 | `server` | | Axum middleware, extractors, `#[server]` context readers (`current_auth`), and SSR initial-state helpers. Enable on the native server build only. |
 | `worker` | | `server` plus `Send`-wrapped middleware futures for single-threaded Cloudflare Workers. |
-
-## Getting started
 
 ### 60-second setup
 

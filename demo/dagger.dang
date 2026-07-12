@@ -7,19 +7,16 @@ type Demo {
   new(ws: Workspace!, rustVersion: String!, envFile: File) {
     # Shared base container: the official Rust image plus clang. clang is needed
     # to cross-compile the C sysroot pulled in by the `dioxus-code` snippet
-    # highlighter (arborium/tree-sitter) for the wasm32 target. Both the Dioxus
-    # and worker-build toolchains build on top of this same container so they
-    # share one environment.
+    # highlighter (arborium/tree-sitter) for the wasm32 target. The `cc` crate
+    # auto-selects clang for wasm32-unknown-unknown, so installing it is enough.
     let rustContainer = Dagger
       .container
       .from("rust:" + rustVersion)
       .withMountedCache("/var/cache/apt/archives", Dagger.cacheVolume("debian-apt-archives"))
-      # .withMountedCache("/var/lib/apt/lists", Dagger.cacheVolume("debian-apt-lists"))
       .withEnvVariable("DEBIAN_FRONTEND", "noninteractive")
       .withExec(["apt-get", "update"])
-      .withExec(["apt-get", "install", "-y", "--no-install-recommends"] + ["clang"])
+      .withExec(["apt-get", "install", "-y", "--no-install-recommends", "clang"])
 
-    # TODO: lock js env version? Use bun directly?
     self.jsEnv = Dagger.javascriptEnvironment(install: true, locked: true)
     self.dioxus = Dagger.dioxus(container: rustContainer, envFile: envFile)
     self.workerBuild = Dagger.workerBuild(container: rustContainer, envFile: envFile)
@@ -86,7 +83,7 @@ type Worker {
   let parent: Demo!
 
   """
-  Builds the Cloudflare Worker bundle.
+  Builds the Cloudflare Worker bundle: the static SPA client plus the Worker.
   """
   build(ws: Workspace!): Directory! @check {
     let client = parent

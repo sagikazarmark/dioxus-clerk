@@ -10,33 +10,16 @@ homepage = "https://github.com/sagikazarmark/dioxus-clerk"
 keywords = ["clerk", "dioxus", "authentication", "auth", "wasm"]
 categories = ["authentication", "web-programming", "wasm"]
 
-[dependencies]
-axum = { version = "0.8", default-features = false, features = ["json"], optional = true }
-axum-extra = { version = "0.12", default-features = false, features = ["cookie"], optional = true }
-ct-codecs = { version = "1", optional = true }
-dioxus = { version = "0.7", default-features = false, features = ["html", "hooks", "signals", "macro"] }
-dioxus-fullstack-core = { version = "0.7", optional = true }
-futures-util = { version = "0.3", default-features = false, features = ["std"], optional = true }
-jwk-simple = { version = "0.3", default-features = false, features = ["jwt-simple"], optional = true }
-jwt-simple = { version = "0.12", default-features = false, features = ["pure-rust"], optional = true }
-thiserror = "2"
-tower = { version = "0.5", features = ["util"], optional = true }
-tracing = { version = "0.1", optional = true }
-send_wrapper = { version = "0.6", features = ["futures"], optional = true }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-web-time = { version = "1", optional = true }
-
 [features]
 default = []
 server = [
-    "dep:dioxus-fullstack-core",
     "dep:axum",
     "dep:axum-extra",
+    "dep:ct-codecs",
+    "dep:dioxus-fullstack-core",
+    "dep:futures-util",
     "dep:jwk-simple",
     "dep:jwt-simple",
-    "dep:ct-codecs",
-    "dep:futures-util",
     "dep:reqwest",
     "dep:tower",
     "dep:tracing",
@@ -44,7 +27,24 @@ server = [
 ]
 # Cloudflare Workers are single-threaded, but Axum still requires `Send`
 # futures. This feature opts into wrapping wasm middleware futures as `Send`.
-worker = ["server", "dep:send_wrapper"]
+worker = ["dep:send_wrapper", "server"]
+
+[dependencies]
+axum = { version = "0.8", default-features = false, features = ["json"], optional = true }
+axum-extra = { version = "0.12", default-features = false, features = ["cookie"], optional = true }
+ct-codecs = { version = "1", optional = true }
+dioxus = { version = "0.7", default-features = false, features = ["html", "hooks", "macro", "signals"] }
+dioxus-fullstack-core = { version = "0.7", optional = true }
+futures-util = { version = "0.3", default-features = false, features = ["std"], optional = true }
+jwk-simple = { version = "0.3", default-features = false, features = ["jwt-simple"], optional = true }
+jwt-simple = { version = "0.12", default-features = false, features = ["pure-rust"], optional = true }
+send_wrapper = { version = "0.6", features = ["futures"], optional = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tower = { version = "0.5", features = ["util"], optional = true }
+tracing = { version = "0.1", optional = true }
+web-time = { version = "1", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 futures-util = { version = "0.3", default-features = false }
@@ -54,7 +54,15 @@ reqwest = { version = "0.13", default-features = false, features = ["json"], opt
 serde-wasm-bindgen = "0.6"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
-web-sys = { version = "0.3", features = ["console", "Document", "Element", "HtmlScriptElement", "HtmlElement", "HtmlHeadElement", "Window"] }
+web-sys = { version = "0.3", features = [
+    "console",
+    "Document",
+    "Element",
+    "HtmlElement",
+    "HtmlHeadElement",
+    "HtmlScriptElement",
+    "Window",
+] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"], optional = true }
@@ -67,9 +75,6 @@ wasm-bindgen-test = "0.3"
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 # Serialized event types + converter so native tests can synthesize clicks.
 dioxus-html = { version = "0.7", default-features = false, features = ["serialize"] }
-tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread", "net"] }
-# Keep validation off transitive releases that require a newer Rust than this crate's MSRV.
-wiremock = "=0.6.5"
 # jsonwebtoken 10 gates its crypto backend behind the `rust_crypto` /
 # `aws_lc_rs` features and panics at runtime unless exactly one is enabled.
 # Its default (`use_pem`) selects neither, so pin the pure-Rust backend
@@ -77,7 +82,11 @@ wiremock = "=0.6.5"
 # from it. Without this, token signing panics with "Could not automatically
 # determine the process-level CryptoProvider".
 jsonwebtoken = { version = "10", features = ["rust_crypto"] }
+# Keep validation off transitive releases that require a newer Rust than this crate's MSRV.
 simple_asn1 = "=0.6.4"
+tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread", "net"] }
+# Keep validation off transitive releases that require a newer Rust than this crate's MSRV.
+wiremock = "=0.6.5"
 
 # docs.rs builds with the server feature and --cfg docsrs so the
 # feature-requirement badges (doc_cfg) render on feature-gated items.
