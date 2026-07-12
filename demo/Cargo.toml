@@ -7,11 +7,41 @@ publish = false
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[features]
+default = []
+web = ["dep:dioxus-code", "dep:gloo-net", "dioxus/launch", "dioxus/web"]
+fullstack-web = ["dioxus/fullstack", "web"]
+server = [
+    "dep:axum",
+    "dep:dioxus-code",
+    "dep:dioxus-server",
+    "dep:tokio",
+    "dioxus-clerk/server",
+    "dioxus/fullstack",
+    "dioxus/server",
+]
+worker = [
+    "dep:axum",
+    "dep:serde_json",
+    "dep:tower-service",
+    "dep:worker",
+    "dep:worker-macros",
+    "dioxus-clerk/worker",
+]
+
 [dependencies]
 dioxus-clerk = { path = ".." }
 
 axum = { version = "0.8", default-features = false, features = ["json"], optional = true }
-dioxus = { version = "0.7", default-features = false, features = ["asset", "document", "html", "hooks", "macro", "router", "signals"] }
+dioxus = { version = "0.7", default-features = false, features = [
+    "asset",
+    "document",
+    "html",
+    "hooks",
+    "macro",
+    "router",
+    "signals",
+] }
 dioxus-code = { version = "0.1.2", optional = true }
 dioxus-free-icons = { version = "0.10", features = ["font-awesome-brands"] }
 dioxus-server = { version = "0.7", optional = true }
@@ -22,32 +52,13 @@ tower-service = { version = "0.3", optional = true }
 worker = { version = "0.8", features = ["http", "axum"], optional = true }
 worker-macros = { version = "0.8", features = ["http"], optional = true }
 
-[features]
-default = []
-web = ["dioxus/launch", "dioxus/web", "dep:gloo-net", "dep:dioxus-code"]
-fullstack-web = ["web", "dioxus/fullstack"]
-server = [
-    "dioxus/fullstack",
-    "dioxus/server",
-    "dioxus-clerk/server",
-    "dep:dioxus-server",
-    "dep:axum",
-    "dep:dioxus-code",
-    "dep:tokio",
-]
-worker = [
-    "dioxus-clerk/worker",
-    "dep:axum",
-    "dep:worker",
-    "dep:worker-macros",
-    "dep:tower-service",
-    "dep:serde_json",
-]
-
 [profile.release]
 opt-level = "z"
 debug = false
 lto = true
 codegen-units = 1
 panic = "abort"
+strip = true
 incremental = false
+
+[workspace]
