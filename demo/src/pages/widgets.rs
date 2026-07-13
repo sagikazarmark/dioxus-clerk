@@ -1,12 +1,12 @@
 use dioxus::prelude::*;
 use dioxus_code::{Code, code};
 
+use crate::components::{DocLink, ExampleSection, InlineCode, PageHeader, snippet_theme};
 use crate::examples::embedded_signin::EmbeddedSignInExample;
 use crate::examples::embedded_signup::EmbeddedSignUpExample;
 use crate::examples::profile_avatar::ProfileAvatarExample;
 use crate::examples::profile_button::ProfileButtonExample;
 use crate::examples::profile_embedded::ProfileEmbeddedExample;
-use crate::ui::{DocLink, ExampleSection, InlineCode, PageHeader, snippet_theme};
 
 #[component]
 pub fn SignInPage() -> Element {
@@ -18,7 +18,6 @@ pub fn SignInPage() -> Element {
         }
         ExampleSection {
             title: "<SignIn> with path routing",
-            stacked: true,
             intro: rsx! {
                 InlineCode { "Routing::Path" }
                 " keeps Clerk's sub-steps under "
@@ -54,7 +53,6 @@ pub fn SignUpPage() -> Element {
         }
         ExampleSection {
             title: "<SignUp> with path routing",
-            stacked: true,
             intro: rsx! {
                 "Like "
                 InlineCode { "<SignIn>" }
@@ -113,7 +111,6 @@ pub fn ProfilePage() -> Element {
         }
         ExampleSection {
             title: "Embedded profile",
-            stacked: true,
             intro: rsx! {
                 InlineCode { "UserProfile" }
                 " mounts the full account-management UI inline, the same surface the "

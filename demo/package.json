@@ -2,14 +2,13 @@
   "name": "dioxus-clerk-demo",
   "private": true,
   "scripts": {
-    "build": "tailwindcss -i ./style.css -o ./assets/style.css --minify",
-    "watch": "tailwindcss -i ./style.css -o ./assets/style.css --watch"
+    "build": "tailwindcss -i ./src/style.css -o ./build/style.css --minify",
+    "watch": "tailwindcss -i ./src/style.css -o ./build/style.css --watch"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.3",
+    "daisyui": "^5.6",
     "tailwindcss": "^4.3",
-    "daisyui": "^5.5",
-    "wrangler": "^4",
-    "@types/node": "^25.9.1"
+    "wrangler": "^4"
   }
 }

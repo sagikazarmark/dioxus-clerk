@@ -1,13 +1,15 @@
 use dioxus::prelude::*;
 use dioxus_code::{Code, code};
 
+use crate::components::{
+    DocLink, ExampleSection, InlineCode, PageHeader, SetupCallout, snippet_theme,
+};
 use crate::examples::org_create::OrgCreateExample;
 use crate::examples::org_list::OrgListExample;
 use crate::examples::org_profile::OrgProfileExample;
 use crate::examples::org_protect::OrgProtectExample;
 use crate::examples::org_switcher::OrgSwitcherExample;
 use crate::examples::waitlist::WaitlistExample;
-use crate::ui::{DocLink, ExampleSection, InlineCode, PageHeader, SetupCallout, snippet_theme};
 
 #[component]
 pub fn Organizations() -> Element {
@@ -41,7 +43,6 @@ pub fn Organizations() -> Element {
         }
         ExampleSection {
             title: "Organization list",
-            stacked: true,
             intro: rsx! {
                 InlineCode { "OrganizationList" }
                 " is the embedded pick-or-create surface: every org the user belongs to, plus a create action, as a full-width view rather than a dropdown."
@@ -51,7 +52,6 @@ pub fn Organizations() -> Element {
         }
         ExampleSection {
             title: "Create organization",
-            stacked: true,
             intro: rsx! {
                 InlineCode { "CreateOrganization" }
                 " is the standalone create-an-org form, the same step the switcher and list expose, mounted on its own route."
@@ -61,7 +61,6 @@ pub fn Organizations() -> Element {
         }
         ExampleSection {
             title: "Organization profile",
-            stacked: true,
             intro: rsx! {
                 InlineCode { "OrganizationProfile" }
                 " mounts the full management UI for the active organization, members, invitations, roles, and settings, inline. It needs an active org to show anything."
@@ -103,7 +102,6 @@ pub fn WaitlistPage() -> Element {
         }
         ExampleSection {
             title: "<Waitlist>",
-            stacked: true,
             intro: rsx! {
                 "A single hosted component. "
                 InlineCode { "after_join_waitlist_url" }

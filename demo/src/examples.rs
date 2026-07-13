@@ -2,7 +2,7 @@
 //!
 //! Each component keeps the `dioxus_clerk` API front and center; purely
 //! presentational bits (spinners, status lines, state readouts) are delegated
-//! to shared helpers in [`crate::ui`] so the source reads as a tight snippet of
+//! to shared helpers in [`crate::components`] so the source reads as a tight snippet of
 //! the library being demonstrated rather than layout markup. The `pages` module
 //! both mounts these live *and* renders their source with the compile-time
 //! `code!` macro, guaranteeing the code shown is the code that runs.

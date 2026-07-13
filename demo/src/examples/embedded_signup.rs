@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_clerk::*;
 
-use crate::ui::Spinner;
+use crate::components::Spinner;
 
 /// The sign-up counterpart to the embedded sign-in form. It shares the same
 /// route-aware provider setup; `fallback_redirect_url` sends brand-new accounts

@@ -3,9 +3,11 @@ use dioxus_clerk::*;
 use dioxus_code::{Code, code};
 
 use crate::app::Route;
+use crate::components::{
+    DocLink, ExampleLayout, ExampleSection, InlineCode, PageHeader, snippet_theme,
+};
 use crate::examples::buttons::ButtonsExample;
 use crate::examples::minimal::MinimalExample;
-use crate::ui::{DocLink, ExampleSection, InlineCode, PageHeader, snippet_theme};
 
 #[component]
 pub fn Home() -> Element {
@@ -84,6 +86,7 @@ pub fn Minimal() -> Element {
         }
         ExampleSection {
             title: "Sign-in action and account controls",
+            layout: ExampleLayout::Columns,
             intro: rsx! {
                 InlineCode { "SignedOut" }
                 " and "
@@ -108,6 +111,7 @@ pub fn Buttons() -> Element {
         }
         ExampleSection {
             title: "Modal vs. redirect",
+            layout: ExampleLayout::Columns,
             intro: rsx! {
                 InlineCode { "AuthButtonMode::Modal" }
                 " opens Clerk's flow in place; "

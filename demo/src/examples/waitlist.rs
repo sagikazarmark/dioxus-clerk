@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_clerk::*;
 
-use crate::ui::Spinner;
+use crate::components::Spinner;
 
 /// Clerk's waitlist form. The widget mounts regardless of configuration, but
 /// submissions only work when the Clerk instance's sign-up mode is set to

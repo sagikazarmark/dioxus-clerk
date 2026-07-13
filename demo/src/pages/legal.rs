@@ -4,7 +4,7 @@
 
 use dioxus::prelude::*;
 
-use crate::ui::PageHeader;
+use crate::components::PageHeader;
 
 /// Shared prose wrapper: a readable measure with sensible spacing between the
 /// headings and paragraphs the two legal pages emit.

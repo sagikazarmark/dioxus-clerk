@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_clerk::*;
 
-use crate::ui::StatusLine;
+use crate::components::StatusLine;
 
 /// Drive Clerk from your own elements.
 ///
@@ -43,6 +43,6 @@ pub fn ImperativeExample() -> Element {
                 }
             }
         }
-        StatusLine { status }
+        StatusLine { status: status() }
     }
 }

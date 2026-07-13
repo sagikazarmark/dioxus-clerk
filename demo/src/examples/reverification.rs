@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_clerk::*;
 
-use crate::ui::StatusLine;
+use crate::components::StatusLine;
 
 /// Guard a sensitive action behind Clerk **step-up reverification**.
 ///
@@ -61,7 +61,7 @@ pub fn ReverificationExample() -> Element {
                 },
                 "Run sensitive action"
             }
-            StatusLine { status }
+            StatusLine { status: status() }
         }
         SignedOut {
             p { class: "text-sm text-base-content/60",
