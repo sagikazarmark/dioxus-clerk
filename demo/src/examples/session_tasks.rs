@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_clerk::*;
 
-use crate::ui::Spinner;
+use crate::components::Spinner;
 
 /// clerk-js v6 after-auth *session tasks* (forced MFA enrollment, organization
 /// selection, …) must be completed before a session is fully active. Such a

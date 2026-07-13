@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_clerk::*;
 
-use crate::ui::StateGrid;
+use crate::components::StateGrid;
 
 /// The reactive hooks.
 ///

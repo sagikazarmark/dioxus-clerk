@@ -26,20 +26,20 @@ type Demo {
   }
 
   let withAssets(ws: Workspace!): Workspace! {
-    let assets = self.jsEnv.withRun(ws, "build").directory("assets")
+    let assets = self.jsEnv.withRun(ws, "build").directory("build")
 
     # DAGGER_TODO: need better way to pass module outputs to other modules
     let dir = ws
       .directory("/", gitignore: true)
-      .withDirectory(ws.cwd + "/assets", assets)
+      .withDirectory(ws.cwd + "/build", assets)
 
     # DAGGER_TODO:
-    # assets is normally ignored by git
+    # the generated stylesheet is normally ignored by git
     # so adding it back causes it to be ignored next time workspace is called
     dir = dir
-      .withFile(
-        "demo/.gitignore",
-        dir.file("demo/.gitignore").withReplaced("/assets/", ""),
+      .withNewFile(
+        ws.cwd + "/.gitignore",
+        dir.file(ws.cwd + "/.gitignore").contents + "\n!/build/style.css",
       )
 
     dir.asWorkspace(ws.cwd)

@@ -1,0 +1,13 @@
+@import "tailwindcss" source(none);
+
+@source "./**/*.rs";
+
+@plugin "daisyui" {
+  themes: light --default, dark;
+}
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+}

@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_clerk::*;
 
-use crate::ui::Spinner;
+use crate::components::Spinner;
 
 /// Clerk's prebuilt sign-in form mounted directly into your route. With
 /// `Routing::Path`, Clerk keeps its sub-steps (SSO, email verification) under

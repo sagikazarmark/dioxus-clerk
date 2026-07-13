@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_clerk::*;
 
-use crate::ui::Spinner;
+use crate::components::Spinner;
 
 /// `UserProfile` mounts the full account-management UI inline, the same surface
 /// `UserButton`'s modal shows, but embedded in your own page. Use it when you

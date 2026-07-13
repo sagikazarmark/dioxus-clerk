@@ -4,21 +4,22 @@
 //! *and* renders that feature's own source (via the compile-time `code!`
 //! macro), so the snippet you read is exactly the code that runs.
 //!
-//! The UI lives in [`app`] (router + shell), [`pages`] (one route each), and
-//! [`examples`] (the small, pure components the pages both mount and quote).
-//! These modules are only compiled for the `web`/`server` builds; the
-//! Cloudflare Worker build ([`crate::worker`] in `lib.rs`) never renders pages.
+//! The UI lives in [`app`] (router + shell), [`components`] (shared presentation),
+//! [`pages`] (one route each), and [`examples`] (the small, pure components the
+//! pages both mount and quote). These modules are only compiled for the
+//! `web`/`server` builds; the Cloudflare Worker build ([`crate::worker`] in
+//! `lib.rs`) never renders pages.
 
 #[cfg(any(feature = "web", feature = "server"))]
 mod app;
+#[cfg(any(feature = "web", feature = "server"))]
+mod components;
 #[cfg(any(feature = "web", feature = "server"))]
 mod examples;
 #[cfg(any(feature = "web", feature = "server"))]
 mod pages;
 #[cfg(any(feature = "web", feature = "server"))]
 mod server_api;
-#[cfg(any(feature = "web", feature = "server"))]
-mod ui;
 
 #[cfg(any(feature = "server", feature = "web"))]
 fn main() {
