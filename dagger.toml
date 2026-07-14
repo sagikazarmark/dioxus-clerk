@@ -11,7 +11,7 @@ check.skip = ["wasm-pack:test"]
 
 [modules.wasm-pack.settings]
 rustVersion = "1.97-slim-trixie"
-defaultBrowsers = "CHROME"
+defaultBrowsers = '"CHROME"'
 
 [modules.dagger-gha]
 source = "github.com/sagikazarmark/daggerverse-beta/dagger-gha"

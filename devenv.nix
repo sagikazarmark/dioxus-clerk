@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 {
   dotenv.enable = true;
@@ -6,6 +6,7 @@
   dagger.enable = true;
   env.DAGGER_X_RELEASE = "86d1d2f5791bcf3213d56903cfa81a3ba0abe54a";
 
+  # Required by arborium
   env.CC_wasm32_unknown_unknown = "${pkgs.llvmPackages.clang-unwrapped}/bin/clang";
 
   packages = with pkgs; [
@@ -16,6 +17,9 @@
     cargo-release
     cargo-watch
     wasm-pack
+  ]++ lib.optionals pkgs.stdenv.isLinux [
+    pkgs.chromium
+    pkgs.chromedriver
   ];
 
   languages = {
@@ -27,7 +31,6 @@
     javascript = {
       enable = true;
       npm.enable = true;
-      bun.enable = true;
     };
   };
 }
