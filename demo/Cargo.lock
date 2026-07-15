@@ -958,6 +958,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4ae5f15dda3c708c0ade84bfee31ccab44a3da4f88015ed22f63732abe300c8"
 
 [[package]]
+name = "demo"
+version = "0.0.0"
+dependencies = [
+ "axum",
+ "dioxus",
+ "dioxus-clerk",
+ "dioxus-code",
+ "dioxus-server",
+ "gloo-net",
+ "serde_json",
+ "tokio",
+ "tower-service",
+ "worker",
+ "worker-macros",
+]
+
+[[package]]
 name = "der"
 version = "0.7.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1124,23 +1141,6 @@ dependencies = [
  "wasm-bindgen-futures",
  "web-sys",
  "web-time",
-]
-
-[[package]]
-name = "dioxus-clerk-demo"
-version = "0.1.0"
-dependencies = [
- "axum",
- "dioxus",
- "dioxus-clerk",
- "dioxus-code",
- "dioxus-server",
- "gloo-net",
- "serde_json",
- "tokio",
- "tower-service",
- "worker",
- "worker-macros",
 ]
 
 [[package]]

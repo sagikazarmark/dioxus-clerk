@@ -1,7 +1,6 @@
 /.env
 /.env.prod
 /.wrangler/
-/assets/
 /build/
 /dist/
 /node_modules/
