@@ -10,4 +10,36 @@
   :root {
     color-scheme: light dark;
   }
+
+  :root[data-theme="light"] {
+    color-scheme: light;
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+  }
+}
+
+@layer components {
+  .theme-toggle-dark {
+    display: none;
+  }
+
+  [data-theme="dark"] .theme-toggle-light {
+    display: none;
+  }
+
+  [data-theme="dark"] .theme-toggle-dark {
+    display: block;
+  }
+
+  [data-theme="light"] .dxc-system {
+    --dxc-light-on: initial;
+    --dxc-dark-on: ;
+  }
+
+  [data-theme="dark"] .dxc-system {
+    --dxc-light-on: ;
+    --dxc-dark-on: initial;
+  }
 }
