@@ -7,7 +7,3 @@ title = "dioxus-clerk demo"
 
 [web.watcher]
 watch_path = ["src"]
-
-[web.wasm_opt]
-level = "z"
-debug = false

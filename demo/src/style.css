@@ -3,7 +3,7 @@
 @source "./**/*.rs";
 
 @plugin "daisyui" {
-  themes: light --default, dark;
+  themes: light --default, dark --prefersdark;
 }
 
 @layer base {

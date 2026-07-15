@@ -11,7 +11,9 @@ pub fn snippet_theme() -> CodeTheme {
     CodeTheme::system(Theme::GITHUB_LIGHT, Theme::TOKYO_NIGHT)
 }
 
-/// Inline monospace styling for an API name or identifier mentioned in prose.
+/// Inline monospace styling for an API name or identifier mentioned in prose
+/// (e.g. `InlineCode { "use_example" }`). Keeps the styling in one place
+/// so every reference reads the same.
 #[component]
 pub fn InlineCode(children: Element) -> Element {
     rsx! {

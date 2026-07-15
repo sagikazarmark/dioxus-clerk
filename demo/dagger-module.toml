@@ -12,10 +12,6 @@ name = "javascript-environment"
 source = "github.com/sagikazarmark/daggerverse-beta/javascript-environment"
 
 [[dependencies]]
-name = "overlays"
-source = "github.com/sagikazarmark/daggerverse-beta/overlays"
-
-[[dependencies]]
 name = "worker-build"
 source = "github.com/sagikazarmark/daggerverse-beta/worker-build"
 

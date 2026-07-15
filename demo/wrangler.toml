@@ -1,6 +1,6 @@
 name = "dioxus-clerk-demo"
 main = "dist/worker/index.js"
-compatibility_date = "2026-05-30"
+compatibility_date = "2026-07-14"
 
 send_metrics = false
 workers_dev = true
