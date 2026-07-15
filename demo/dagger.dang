@@ -4,7 +4,7 @@ type Demo {
   let workerBuild: WorkerBuild!
   let envFile: File
 
-  new(ws: Workspace!, rustVersion: String!, envFile: File) {
+  new(rustVersion: String!, envFile: File) {
     # clang is needed to cross-compile the C sysroot pulled in
     # by the `dioxus-code` snippet highlighter (arborium/tree-sitter) for the wasm32 target.
     # The `cc` crate auto-selects clang for wasm32-unknown-unknown, so installing it is enough.

@@ -1,6 +1,10 @@
 {
   "name": "demo",
   "private": true,
+  "scripts": {
+    "build": "tailwindcss -i src/style.css -o build/style.css --minify",
+    "watch": "tailwindcss -i src/style.css -o build/style.css --watch"
+  },
   "devDependencies": {
     "@tailwindcss/cli": "^4.3",
     "daisyui": "^5.6",

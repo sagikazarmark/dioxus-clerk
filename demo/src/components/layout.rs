@@ -17,6 +17,11 @@ where
     R: Routable + PartialEq,
 {
     rsx! {
+        a {
+            class: "sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-base-100 focus:px-4 focus:py-2 focus:font-semibold focus:shadow",
+            href: "#main-content",
+            "Skip to main content"
+        }
         header { class: "sticky top-0 z-20 border-b border-base-300 bg-base-100/90 backdrop-blur",
             div { class: "mx-auto flex min-h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6",
                 Link {
@@ -68,7 +73,8 @@ pub fn DemoFooter(#[props(into)] description: String, links: Element) -> Element
     }
 }
 
-/// Consistent page heading: a small colored eyebrow, a title, and a lead paragraph.
+/// Consistent page heading: a small colored eyebrow, a title, and a lead
+/// paragraph.
 #[component]
 pub fn PageHeader(
     #[props(into)] eyebrow: String,
@@ -84,12 +90,17 @@ pub fn PageHeader(
     }
 }
 
-/// Responsive navigation composed from [`SidebarNavSection`] children.
+/// Navigation composed from one or more [`SidebarNavSection`] children.
+///
+/// The sections form a horizontal strip on small screens and a sticky sidebar
+/// on large screens.
 #[component]
 pub fn Sidebar(children: Element) -> Element {
     rsx! {
         aside { class: "border-b border-base-300 bg-base-100 lg:w-60 lg:shrink-0 lg:border-b-0",
-            nav { class: "flex gap-1 overflow-x-auto px-4 py-2 sm:px-6 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:block lg:space-y-6 lg:overflow-y-auto lg:px-0 lg:py-8 lg:pr-2",
+            nav {
+                "aria-label": "Demo navigation",
+                class: "flex gap-1 overflow-x-auto px-4 py-2 sm:px-6 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:block lg:space-y-6 lg:overflow-y-auto lg:px-0 lg:py-8 lg:pr-2",
                 {children}
             }
         }
@@ -109,7 +120,8 @@ pub fn SidebarNavSection(#[props(into)] label: String, children: Element) -> Ele
     }
 }
 
-/// Sidebar presentation around a route-aware [`NavLink`].
+/// Sidebar presentation around a route-aware [`NavLink`], including its
+/// optional active-state override.
 #[component]
 pub fn SidebarNavLink<R>(
     route: R,

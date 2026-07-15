@@ -109,21 +109,23 @@ The demo uses `env!`, so the build fails at compile time with a clear rustc
 error if `CLERK_PUBLISHABLE_KEY` isn't set:
 
 ```bash
-# Inline for one-off runs:
-CLERK_PUBLISHABLE_KEY=pk_test_xxx dx serve
-
-# Or export in your shell (the server also needs the secret key):
 export CLERK_PUBLISHABLE_KEY=pk_test_xxx
 export CLERK_SECRET_KEY=sk_test_xxx
+cd demo
+npm ci
+npm run build
+dx serve --fullstack \
+  @client --platform web --no-default-features --features fullstack-web \
+  @server --platform server --no-default-features --features server
 ```
 
-Because `env!` resolves at build time, the same value must be present when the wasm and server halves of a fullstack app are compiled. `dx serve` handles this automatically. If clerk-js init fails at runtime (bad key, dashboard origin not whitelisted, network), `use_clerk_error()` exposes the failure so apps can render an error UI instead of staying stuck on `Loading`.
+Because `env!` resolves at build time, the same value must be present when the wasm and server halves of a fullstack app are compiled. The fullstack command passes the exported value to both builds. If clerk-js init fails at runtime (bad key, dashboard origin not whitelisted, network), `use_clerk_error()` exposes the failure so apps can render an error UI instead of staying stuck on `Loading`.
 
 To run the whole demo in containers without a local Node/`dx` toolchain, use Dagger instead (it reads the keys from a `.env` file):
 
 ```bash
 cd demo
-dagger up
+dagger call service up
 ```
 
 See [`demo/README.md`](demo/README.md) for full run instructions, the Cloudflare Worker mode, and the matching Dagger commands. The demo combines the minimal SPA, router, and fullstack server-function flows into one app.

@@ -1,6 +1,4 @@
 [["version","1"]]
-["","container.from",["docker.io/denoland/deno:latest","linux/arm64"],"sha256:69a9f3033e3f381770452648b1cbf4ae96ea409f7ef24f30afeff3d380705f62","pin"]
 ["","container.from",["docker.io/library/node:latest","linux/arm64"],"sha256:926d6cafec97f338577041890465522f70fe74aa6fe4b021a4fd7f87a5996b25","pin"]
 ["","container.from",["docker.io/library/rust:1.97-trixie","linux/arm64"],"sha256:44637ff22d0a6571a221bfaf137849711ad02ff4723dbb4736e297538f6a3e60","pin"]
-["","container.from",["docker.io/oven/bun:latest","linux/arm64"],"sha256:e10577f0db68676a7024391c6e5cb4b879ebd17188ab750cf10024a6d700e5c4","pin"]
 ["","git.head",["https://github.com/sagikazarmark/daggerverse-beta"],"2c069e9ebbe703e515e0203064396c469f3a9f79","float"]

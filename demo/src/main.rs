@@ -5,7 +5,7 @@
 //! macro), so the snippet you read is exactly the code that runs.
 //!
 //! The UI lives in [`app`] (router + shell), [`components`] (shared presentation),
-//! [`pages`] (one route each), and [`examples`] (the small, pure components the
+//! [`pages`] (grouped by navigation section), and [`examples`] (the small, pure components the
 //! pages both mount and quote). These modules are only compiled for the
 //! `web`/`server` builds; the Cloudflare Worker build ([`crate::worker`] in
 //! `lib.rs`) never renders pages.
