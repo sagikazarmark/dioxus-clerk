@@ -4,6 +4,60 @@ use dioxus::prelude::*;
 
 use super::NavLink;
 
+const THEME_INIT_SCRIPT: &str = r#"
+(() => {
+  const root = document.documentElement;
+  const storageKey = "demo-theme";
+  let theme = null;
+
+  try {
+    theme = window.localStorage.getItem(storageKey);
+  } catch {}
+
+  if (theme !== "light" && theme !== "dark") {
+    theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+
+  root.dataset.theme = theme;
+
+  const syncToggle = () => {
+    const toggle = document.querySelector("[data-theme-toggle]");
+    if (!toggle) return;
+
+    const dark = root.dataset.theme === "dark";
+    const label = dark ? "Switch to light theme" : "Switch to dark theme";
+    toggle.setAttribute("aria-pressed", String(dark));
+    toggle.setAttribute("aria-label", label);
+    toggle.setAttribute("title", label);
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", syncToggle, { once: true });
+  } else {
+    window.requestAnimationFrame(syncToggle);
+  }
+})();
+"#;
+
+const THEME_TOGGLE_SCRIPT: &str = r#"
+const root = document.documentElement;
+const theme = root.dataset.theme === "dark" ? "light" : "dark";
+root.dataset.theme = theme;
+
+try {
+  window.localStorage.setItem("demo-theme", theme);
+} catch {}
+
+const toggle = document.querySelector("[data-theme-toggle]");
+if (toggle) {
+  const dark = theme === "dark";
+  const label = dark ? "Switch to light theme" : "Switch to dark theme";
+  toggle.setAttribute("aria-pressed", String(dark));
+  toggle.setAttribute("aria-label", label);
+  toggle.setAttribute("title", label);
+}
+"#;
+
 /// Shared header chrome with application identity supplied by the caller.
 #[component]
 pub fn DemoHeader<R>(
@@ -35,6 +89,9 @@ where
                     }
                 }
                 div { class: "flex shrink-0 items-center gap-2",
+                    if let Some(actions) = actions {
+                        {actions}
+                    }
                     a {
                         class: "btn btn-ghost btn-sm btn-circle",
                         href: "{github_url}",
@@ -51,10 +108,48 @@ where
                             path { d: "M12 .5C5.37.5 0 5.78 0 12.29c0 5.2 3.44 9.6 8.2 11.16.6.1.82-.25.82-.56v-2c-3.34.72-4.04-1.6-4.04-1.6-.55-1.36-1.33-1.72-1.33-1.72-1.09-.73.08-.72.08-.72 1.2.08 1.84 1.22 1.84 1.22 1.07 1.8 2.8 1.28 3.49.98.1-.77.42-1.28.76-1.58-2.67-.3-5.47-1.31-5.47-5.84 0-1.29.47-2.34 1.24-3.17-.13-.3-.54-1.52.12-3.16 0 0 1.01-.32 3.3 1.21a11.6 11.6 0 0 1 6 0c2.28-1.53 3.29-1.21 3.29-1.21.66 1.64.25 2.86.12 3.16.77.83 1.24 1.88 1.24 3.17 0 4.54-2.81 5.53-5.49 5.83.43.36.81 1.09.81 2.2v3.26c0 .31.21.67.82.56A11.8 11.8 0 0 0 24 12.29C24 5.78 18.63.5 12 .5z" }
                         }
                     }
-                    if let Some(actions) = actions {
-                        {actions}
-                    }
+                    ThemeSwitcher {}
                 }
+            }
+        }
+    }
+}
+
+#[component]
+fn ThemeSwitcher() -> Element {
+    rsx! {
+        document::Script { "{THEME_INIT_SCRIPT}" }
+        button {
+            class: "btn btn-ghost btn-sm btn-circle",
+            r#type: "button",
+            "data-theme-toggle": "",
+            title: "Toggle light and dark theme",
+            aria_label: "Toggle light and dark theme",
+            onclick: move |_| {
+                let _ = document::eval(THEME_TOGGLE_SCRIPT);
+            },
+            svg {
+                class: "theme-toggle-light size-5",
+                view_box: "0 0 24 24",
+                fill: "none",
+                stroke: "currentColor",
+                "stroke-width": "2",
+                "stroke-linecap": "round",
+                "stroke-linejoin": "round",
+                "aria-hidden": "true",
+                circle { cx: "12", cy: "12", r: "4" }
+                path { d: "M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" }
+            }
+            svg {
+                class: "theme-toggle-dark size-5",
+                view_box: "0 0 24 24",
+                fill: "none",
+                stroke: "currentColor",
+                "stroke-width": "2",
+                "stroke-linecap": "round",
+                "stroke-linejoin": "round",
+                "aria-hidden": "true",
+                path { d: "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" }
             }
         }
     }
