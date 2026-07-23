@@ -186,6 +186,20 @@ With the `server` feature enabled, `ClerkError` converts into Dioxus'
 `ServerFnError`, so server functions returning `Result<_, ServerFnError>` can
 use `current_auth()?` directly.
 
+### Server organization claims
+
+`ClerkAuthLayer` supports both current Clerk v2 session tokens and legacy v1
+flat organization claims. For v2 tokens, it maps the nested `o` claim into
+`ClerkAuth` and reconstructs custom permissions from `fea`, `o.per`, and
+`o.fpm`. A nested v2 organization takes precedence when both representations
+are present; v1 and v2 permissions are never combined. Missing or malformed v2
+permission compression grants no permissions.
+
+Authorization keys use Clerk's canonical vocabulary. Roles are
+`org:<role>` (for example, `org:admin`), and custom permissions are
+`org:<feature>:<permission>` (for example, `org:invoices:create`). Clerk v2
+role claims omit the `org:` prefix on the wire; `ClerkAuthLayer` restores it.
+
 ## Auth lifecycle
 
 `window.Clerk` and auth loadedness are separate lifecycle facts:
@@ -436,7 +450,7 @@ SignedIn { UserButton {} }
 ### Rendering gates
 
 ```rust
-Protect { permission: "org:read", span { "Protected" } }
+Protect { role: "org:admin", span { "Admin only" } }
 
 Protect {
     permission: "org:invoices:create",
@@ -483,8 +497,8 @@ cargo build --target wasm32-unknown-unknown
 # Build the docs
 cargo doc --no-deps
 
-# Run the native + integration tests
-cargo test
+# Run the native + integration tests, including server-gated coverage
+cargo test --all-features
 
 # Run the wasm-bindgen browser tests
 wasm-pack test --headless --chrome

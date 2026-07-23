@@ -28,10 +28,11 @@ pub struct ClerkAuth {
     /// Active organization slug, if Clerk provided one.
     #[serde(default)]
     pub org_slug: Option<String>,
-    /// Org role (e.g. "admin", "basic_member").
+    /// Organization role in Clerk's `org:<role>` form (e.g. `"org:admin"`).
     #[serde(default)]
     pub org_role: Option<String>,
-    /// Org permissions string list ("org:read", "org:write", ...).
+    /// Custom organization permissions in Clerk's
+    /// `org:<feature>:<permission>` form (e.g. `"org:invoices:create"`).
     #[serde(default)]
     pub org_permissions: Vec<String>,
     /// Expiry (unix seconds).

@@ -34,8 +34,15 @@ fn initial_state_from_valid_outcome_preserves_verified_gate_claims() {
 
     let state = InitialState::from_outcome(Some(&outcome), Some("pk_test_state"));
 
-    assert_eq!(state.auth.org_role.as_deref(), Some("admin"));
-    assert_eq!(state.auth.org_permissions, vec!["org:read", "org:write"]);
+    assert_eq!(state.auth.org_role.as_deref(), Some("org:admin"));
+    assert_eq!(
+        state.auth.org_permissions,
+        vec![
+            "org:dashboard:manage",
+            "org:dashboard:read",
+            "org:teams:read"
+        ]
+    );
 }
 
 #[test]

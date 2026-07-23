@@ -74,8 +74,15 @@ fn ssr_initial_state_preserves_verified_gate_claims() {
 
     let state = initial_state(Some(&outcome), Some("pk_test_xxx"));
 
-    assert_eq!(state.auth.org_role.as_deref(), Some("admin"));
-    assert_eq!(state.auth.org_permissions, vec!["org:read", "org:write"]);
+    assert_eq!(state.auth.org_role.as_deref(), Some("org:admin"));
+    assert_eq!(
+        state.auth.org_permissions,
+        vec![
+            "org:dashboard:manage",
+            "org:dashboard:read",
+            "org:teams:read"
+        ]
+    );
 }
 
 #[tokio::test]

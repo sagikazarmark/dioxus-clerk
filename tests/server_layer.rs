@@ -17,7 +17,7 @@ use std::convert::Infallible;
 use tower::{Layer, ServiceExt, service_fn};
 
 #[tokio::test]
-async fn valid_bearer_token_populates_valid_outcome() {
+async fn v1_flat_organization_claims_remain_supported() {
     use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
     let (priv_pem, jwks_json) = test_keys();
     let issued_at = now() as i64;
@@ -28,8 +28,8 @@ async fn valid_bearer_token_populates_valid_outcome() {
         "sub": "user_2abc",
         "sid": "sess_2def",
         "org_id": "org_2ghi",
-        "org_role": "admin",
-        "org_permissions": ["org:read", "org:write"],
+        "org_role": "org:admin",
+        "org_permissions": ["org:dashboard:read", "org:teams:manage"],
         "iss": "https://test.clerk.dev",
         "exp": expires_at,
         "iat": issued_at,
@@ -59,8 +59,11 @@ async fn valid_bearer_token_populates_valid_outcome() {
                 assert_eq!(auth.user_id, "user_2abc");
                 assert_eq!(auth.session_id.as_deref(), Some("sess_2def"));
                 assert_eq!(auth.org_id.as_deref(), Some("org_2ghi"));
-                assert_eq!(auth.org_role.as_deref(), Some("admin"));
-                assert_eq!(auth.org_permissions, vec!["org:read", "org:write"]);
+                assert_eq!(auth.org_role.as_deref(), Some("org:admin"));
+                assert_eq!(
+                    auth.org_permissions,
+                    vec!["org:dashboard:read", "org:teams:manage"]
+                );
                 assert_eq!(auth.exp, expires_at);
                 assert_eq!(auth.nbf, not_before);
                 assert_eq!(auth.iat, issued_at);
@@ -84,6 +87,186 @@ async fn valid_bearer_token_populates_valid_outcome() {
     assert_eq!(resp.status(), StatusCode::OK);
     let body = axum::body::to_bytes(resp.into_body(), 1024).await.unwrap();
     assert_eq!(&body[..], b"valid");
+}
+
+#[tokio::test]
+async fn v2_token_populates_active_organization_and_normalizes_role() {
+    let auth = auth_from_signed_claims(claims_with([
+        ("v", serde_json::json!(2)),
+        (
+            "o",
+            serde_json::json!({
+                "id": "org_2ghi",
+                "slg": "acme",
+                "rol": "admin"
+            }),
+        ),
+    ]))
+    .await
+    .unwrap();
+
+    assert_eq!(auth.org_id.as_deref(), Some("org_2ghi"));
+    assert_eq!(auth.org_slug.as_deref(), Some("acme"));
+    assert_eq!(auth.org_role.as_deref(), Some("org:admin"));
+    assert!(auth.org_permissions.is_empty());
+}
+
+#[tokio::test]
+async fn v2_token_does_not_double_prefix_organization_role() {
+    let mut claims = v2_claims(None, None, None);
+    claims["o"]["rol"] = serde_json::json!("org:admin");
+    let auth = auth_from_signed_claims(claims).await.unwrap();
+
+    assert_eq!(auth.org_role.as_deref(), Some("org:admin"));
+}
+
+#[tokio::test]
+async fn v2_token_reconstructs_feature_scoped_permissions() {
+    let auth = auth_from_signed_claims(claims_with([
+        ("v", serde_json::json!(2)),
+        ("fea", serde_json::json!("o:dashboard,o:teams")),
+        (
+            "o",
+            serde_json::json!({
+                "id": "org_2ghi",
+                "rol": "admin",
+                "per": "manage,read",
+                "fpm": "3,2"
+            }),
+        ),
+    ]))
+    .await
+    .unwrap();
+
+    assert_eq!(
+        auth.org_permissions,
+        [
+            "org:dashboard:manage",
+            "org:dashboard:read",
+            "org:teams:read"
+        ]
+    );
+    assert!(auth.has_permission("org:dashboard:manage"));
+    assert!(auth.has_permission("org:dashboard:read"));
+    assert!(auth.has_permission("org:teams:read"));
+    assert!(!auth.has_permission("org:teams:manage"));
+
+    let auth_state = dioxus_clerk::core::AuthState::from(&auth);
+    assert!(auth_state.has_role("org:admin"));
+    assert!(auth_state.has_permission("org:dashboard:read"));
+
+    let snapshot = dioxus_clerk::ssr::InitialAuthSnapshot::from(&auth);
+    assert_eq!(snapshot.org_id.as_deref(), Some("org_2ghi"));
+    assert_eq!(snapshot.org_permissions, auth.org_permissions);
+}
+
+#[tokio::test]
+async fn v2_token_malformed_permission_compression_grants_nothing() {
+    let cases = [
+        (
+            "fewer masks than features",
+            Some("o:dashboard,o:teams"),
+            Some("manage,read"),
+            Some("3"),
+        ),
+        (
+            "more masks than features",
+            Some("o:dashboard"),
+            Some("manage,read"),
+            Some("3,2"),
+        ),
+        (
+            "bit outside permission list",
+            Some("o:dashboard"),
+            Some("manage,read"),
+            Some("7"),
+        ),
+        (
+            "malformed mask",
+            Some("o:dashboard"),
+            Some("read"),
+            Some("not-a-number"),
+        ),
+        (
+            "overflowing mask",
+            Some("o:dashboard"),
+            Some("read"),
+            Some("340282366920938463463374607431768211456"),
+        ),
+        ("empty feature", Some("o:"), Some("read"), Some("1")),
+        (
+            "empty permission",
+            Some("o:dashboard"),
+            Some("read,"),
+            Some("2"),
+        ),
+        ("missing features", None, Some("read"), Some("1")),
+        ("missing permissions", Some("o:dashboard"), None, Some("1")),
+        (
+            "missing feature permission map",
+            Some("o:dashboard"),
+            Some("read"),
+            None,
+        ),
+    ];
+
+    for (name, features, permissions, feature_permission_map) in cases {
+        let auth =
+            auth_from_signed_claims(v2_claims(features, permissions, feature_permission_map))
+                .await
+                .unwrap();
+
+        assert_eq!(auth.org_id.as_deref(), Some("org_2ghi"), "{name}");
+        assert_eq!(auth.org_role.as_deref(), Some("org:admin"), "{name}");
+        assert!(auth.org_permissions.is_empty(), "{name}");
+    }
+}
+
+#[tokio::test]
+async fn v2_token_without_active_organization_has_no_organization_context() {
+    let auth = auth_from_signed_claims(claims_with([("v", serde_json::json!(2))]))
+        .await
+        .unwrap();
+
+    assert_eq!(auth.org_id, None);
+    assert_eq!(auth.org_slug, None);
+    assert_eq!(auth.org_role, None);
+    assert!(auth.org_permissions.is_empty());
+}
+
+#[tokio::test]
+async fn v2_permission_map_preserves_user_feature_alignment_and_zero_masks() {
+    let auth = auth_from_signed_claims(v2_claims(
+        Some("u:personal,o:dashboard,o:teams"),
+        Some("manage,read"),
+        Some("3,0,2"),
+    ))
+    .await
+    .unwrap();
+
+    assert_eq!(auth.org_permissions, ["org:teams:read"]);
+}
+
+#[tokio::test]
+async fn v2_nested_organization_takes_precedence_over_flat_v1_claims() {
+    let mut claims = v2_claims(Some("o:dashboard"), Some("read"), Some("1"));
+    {
+        let claims = claims.as_object_mut().unwrap();
+        claims.insert("org_id".into(), serde_json::json!("org_legacy"));
+        claims.insert("org_slug".into(), serde_json::json!("legacy"));
+        claims.insert("org_role".into(), serde_json::json!("org:owner"));
+        claims.insert(
+            "org_permissions".into(),
+            serde_json::json!(["org:legacy:all"]),
+        );
+    }
+    let auth = auth_from_signed_claims(claims).await.unwrap();
+
+    assert_eq!(auth.org_id.as_deref(), Some("org_2ghi"));
+    assert_eq!(auth.org_slug, None);
+    assert_eq!(auth.org_role.as_deref(), Some("org:admin"));
+    assert_eq!(auth.org_permissions, ["org:dashboard:read"]);
+    assert!(!auth.has_permission("org:legacy:all"));
 }
 
 #[tokio::test]
@@ -740,6 +923,24 @@ where
     layer_with_jwks_base_url(format!("{}/v1", server.uri())).layer(service_fn(handler))
 }
 
+async fn auth_from_signed_claims(claims: serde_json::Value) -> Result<ClerkAuth, String> {
+    let token = signed_test_token_with_claims(claims, "test-kid", Some("JWT"));
+    let response = test_app(|req: Request<Body>| async move {
+        let body = match req.extensions().get::<VerificationOutcome>() {
+            Some(VerificationOutcome::Valid(auth)) => serde_json::to_string(auth).unwrap(),
+            outcome => format!("unexpected verification outcome: {outcome:?}"),
+        };
+        Ok::<_, Infallible>(Response::new(Body::from(body)))
+    })
+    .await
+    .oneshot(request_with_auth(Some(&format!("Bearer {token}"))))
+    .await
+    .unwrap();
+    let body = body_text(response).await;
+
+    serde_json::from_str(&body).map_err(|_| body)
+}
+
 fn request_with_auth(auth: Option<&str>) -> Request<Body> {
     let mut builder = Request::builder().uri("/");
     if let Some(auth) = auth {
@@ -801,6 +1002,33 @@ fn claims_without(keys: impl IntoIterator<Item = &'static str>) -> serde_json::V
     let object = claims.as_object_mut().unwrap();
     for key in keys {
         object.remove(key);
+    }
+    claims
+}
+
+fn v2_claims(
+    features: Option<&str>,
+    permissions: Option<&str>,
+    feature_permission_map: Option<&str>,
+) -> serde_json::Value {
+    let mut claims = claims_with([
+        ("v", serde_json::json!(2)),
+        (
+            "o",
+            serde_json::json!({
+                "id": "org_2ghi",
+                "rol": "admin",
+            }),
+        ),
+    ]);
+    if let Some(permissions) = permissions {
+        claims["o"]["per"] = serde_json::json!(permissions);
+    }
+    if let Some(feature_permission_map) = feature_permission_map {
+        claims["o"]["fpm"] = serde_json::json!(feature_permission_map);
+    }
+    if let Some(features) = features {
+        claims["fea"] = serde_json::json!(features);
     }
     claims
 }
