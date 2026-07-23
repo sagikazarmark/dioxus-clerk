@@ -458,23 +458,3 @@ pub fn create_mount_element() -> web_sys::Element {
         .create_element("div")
         .unwrap()
 }
-
-pub fn append_mount_element_with_id(id: &str) -> web_sys::Element {
-    let document = window().document().expect("document exists");
-    let element = document.create_element("div").unwrap();
-    element.set_id(id);
-    document
-        .body()
-        .expect("body exists")
-        .append_child(&element)
-        .unwrap();
-    element
-}
-
-pub fn remove_element_by_id(id: &str) {
-    if let Some(document) = window().document() {
-        if let Some(element) = document.get_element_by_id(id) {
-            element.remove();
-        }
-    }
-}

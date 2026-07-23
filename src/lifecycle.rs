@@ -312,8 +312,8 @@ pub(crate) fn use_loaded_bridge_action<T: 'static, D: Dependency>(
             }
             LoadedAction::Deferred => {
                 if *deferred_ms.peek() >= max_deferred_ms {
-                    // Reset so a later deferral cycle (e.g. after an id or
-                    // options change) gets a fresh deadline instead of
+                    // Reset so a later deferral cycle (e.g. after a host or
+                    // dependency change) gets a fresh deadline instead of
                     // erroring immediately off the saturated counter.
                     let mut deferred_ms = deferred_ms;
                     deferred_ms.set(0);
@@ -332,8 +332,8 @@ pub(crate) fn use_loaded_bridge_action<T: 'static, D: Dependency>(
                 });
             }
             LoadedAction::Failed => {
-                // Reset so a later deferral cycle (e.g. after an id or
-                // options change) gets a fresh deadline, matching Done.
+                // Reset so a later deferral cycle (e.g. after a host or
+                // dependency change) gets a fresh deadline, matching Done.
                 let mut deferred_ms = deferred_ms;
                 deferred_ms.set(0);
             }
