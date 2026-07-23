@@ -11,8 +11,12 @@ pub fn sample_auth() -> ClerkAuth {
     auth.session_id = Some("sess_2def".into());
     auth.org_id = Some("org_2ghi".into());
     auth.org_slug = Some("acme".into());
-    auth.org_role = Some("admin".into());
-    auth.org_permissions = vec!["org:read".into(), "org:write".into()];
+    auth.org_role = Some("org:admin".into());
+    auth.org_permissions = vec![
+        "org:dashboard:manage".into(),
+        "org:dashboard:read".into(),
+        "org:teams:read".into(),
+    ];
     auth
 }
 

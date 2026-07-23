@@ -85,9 +85,9 @@ fn App() -> Element {
             SignedIn { SignedInProbe {} }
             SignedOut { SignedOutProbe {} }
             Protect { ProtectProbe {} }
-            Protect { role: Some("admin".to_string()), RoleProtectProbe {} }
-            Protect { permission: Some("org:read".to_string()), PermissionProtectProbe {} }
-            Protect { role: Some("basic_member".to_string()), DeniedProtectProbe {} }
+            Protect { role: Some("org:admin".to_string()), RoleProtectProbe {} }
+            Protect { permission: Some("org:dashboard:read".to_string()), PermissionProtectProbe {} }
+            Protect { role: Some("org:member".to_string()), DeniedProtectProbe {} }
         }
     }
 }

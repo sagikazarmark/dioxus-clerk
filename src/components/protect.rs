@@ -35,7 +35,7 @@ use dioxus::prelude::*;
 /// fn AdminLink() -> Element {
 ///     rsx! {
 ///         Protect {
-///             role: "admin",
+///             role: "org:admin",
 ///             fallback: rsx! {},
 ///             a { href: "/admin", "Admin" }
 ///         }
@@ -44,11 +44,11 @@ use dioxus::prelude::*;
 /// ```
 #[component]
 pub fn Protect(
-    /// Org role (e.g. `"admin"`) the signed-in user must hold, verified
+    /// Org role (e.g. `"org:admin"`) the signed-in user must hold, verified
     /// against server-verified org claims. Ignored when `permission` is set.
     #[props(into)]
     role: Option<String>,
-    /// Org permission (e.g. `"org:read"`) the signed-in user must hold,
+    /// Org permission (e.g. `"org:invoices:create"`) the signed-in user must hold,
     /// verified against server-verified org claims. Takes precedence over
     /// `role`, matching Clerk React.
     #[props(into)]
