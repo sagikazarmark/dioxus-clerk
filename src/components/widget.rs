@@ -1,16 +1,16 @@
 use dioxus::dioxus_core::AttributeValue;
 use dioxus::prelude::*;
+use std::rc::Rc;
 
 #[cfg(clerk_client)]
-const HOST_RETRY_MS: u32 = 16;
-/// How long to retry a missing host element before surfacing an error instead
-/// of polling the DOM forever (e.g. on an SSR/client host-id mismatch).
+const HOST_MOUNT_RETRY_MS: u32 = 16;
+/// How long to wait for Dioxus to report the mounted host element instead of
+/// polling forever when a renderer never supplies it.
 #[cfg(clerk_client)]
-const HOST_DEADLINE_MS: u32 = 10_000;
+const HOST_MOUNT_DEADLINE_MS: u32 = 10_000;
 
-/// Mountable Clerk widget vocabulary, shared between the SSR host rendering
-/// (host-id prefixes compile on every target) and the JS bridge layer's
-/// clerk-js mount/unmount method tables (browser client only).
+/// Mountable Clerk widget vocabulary shared by component rendering and the JS
+/// bridge layer's clerk-js mount/unmount method tables.
 #[derive(Clone, Copy, PartialEq)]
 pub(crate) enum Widget {
     SignIn,
@@ -26,21 +26,6 @@ pub(crate) enum Widget {
 }
 
 impl Widget {
-    fn host_id_prefix(self) -> &'static str {
-        match self {
-            Self::SignIn => "clerk-signin",
-            Self::SignUp => "clerk-signup",
-            Self::UserButton => "clerk-userbutton",
-            Self::UserProfile => "clerk-userprofile",
-            Self::CreateOrganization => "clerk-createorganization",
-            Self::OrganizationProfile => "clerk-organizationprofile",
-            Self::OrganizationSwitcher => "clerk-organizationswitcher",
-            Self::OrganizationList => "clerk-organizationlist",
-            Self::Waitlist => "clerk-waitlist",
-            Self::TaskSetupMfa => "clerk-tasksetupmfa",
-        }
-    }
-
     #[cfg(clerk_client)]
     pub(crate) fn mount_method(self) -> &'static str {
         match self {
@@ -99,18 +84,25 @@ struct HostProps {
 
 #[derive(Clone)]
 struct MountedWidget {
-    id: String,
     options: serde_json::Value,
     /// The DOM element clerk-js actually mounted into. Unmount paths must use
-    /// this element: after an `id` prop change a fresh document lookup finds
-    /// the wrong (or no) element, leaving clerk-js bookkeeping behind.
+    /// this element even if the renderer later replaces or detaches it.
     #[cfg(clerk_client)]
     element: web_sys::Element,
 }
 
 impl PartialEq for MountedWidget {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id && self.options == other.options
+        self.options == other.options && {
+            #[cfg(clerk_client)]
+            {
+                js_sys::Object::is(self.element.as_ref(), other.element.as_ref())
+            }
+            #[cfg(not(clerk_client))]
+            {
+                true
+            }
+        }
     }
 }
 
@@ -151,24 +143,20 @@ fn WidgetHost(
     fallback: Element,
     host: HostProps,
 ) -> Element {
-    // The clerk-js mount target id, in precedence order: the explicit `id`
-    // prop, then an `id` from the attribute spread, then a generated
-    // scope-stable id. clerk-js mounts into this element by id, so the widget
-    // must know it: the explicit prop stays authoritative, but a spread `id`
-    // is honored as a fallback rather than silently dropped.
-    let id = host
-        .id
-        .or_else(|| spread_id(&host.attributes))
-        .unwrap_or_else(|| generated_host_id(widget));
+    // IDs are caller-owned DOM attributes, not lifecycle handles. Omitting an
+    // ID avoids coupling SSR output to client scope allocation; Dioxus supplies
+    // the actual mount element through `onmounted` below.
+    let id = host.id.or_else(|| spread_id(&host.attributes));
     // The resolved id is rendered explicitly on the host `<div>` below, so drop
     // any `id` from the spread to keep a single authoritative `id` attribute.
     let mut attributes = host.attributes;
     attributes.retain(|attribute| attribute.name != "id");
     let mounted_widget = use_signal(|| None::<MountedWidget>);
+    let host_element = use_signal(|| None::<Rc<MountedData>>);
     let is_mounted_with_current_options = mounted_widget
         .read()
         .as_ref()
-        .is_some_and(|mounted| mounted.id == id && mounted.options == options);
+        .is_some_and(|mounted| mounted.options == options);
     // The fallback renders as a sibling of the host div: clerk-js owns the
     // host element's children once mounted, so Dioxus must not manage nodes
     // inside it.
@@ -176,17 +164,25 @@ fn WidgetHost(
         if !is_mounted_with_current_options {
             {fallback}
         }
-        div { id: "{id}", ..attributes,
-            WidgetLifecycle { id: id.clone(), widget, options, mounted_widget }
+        div {
+            id,
+            onmounted: move |event| {
+                let mut host_element = host_element;
+                host_element.set(Some(event.data()));
+            },
+            ..attributes,
         }
+        // clerk-js owns every descendant of the host div. Keep Dioxus's empty
+        // component placeholder outside that ownership boundary.
+        WidgetLifecycle { widget, options, host_element, mounted_widget }
     }
 }
 
 #[component]
 fn WidgetLifecycle(
-    id: String,
     widget: Widget,
     options: serde_json::Value,
+    host_element: Signal<Option<Rc<MountedData>>>,
     mounted_widget: Signal<Option<MountedWidget>>,
 ) -> Element {
     #[cfg(clerk_client)]
@@ -194,41 +190,46 @@ fn WidgetLifecycle(
         use crate::bridge::ClerkBridge;
         use crate::lifecycle::BridgeAction;
 
-        let id_for_mount = id.clone();
-        let id_for_guard = id.clone();
-        let id_for_done = id.clone();
         let widget_local = widget;
         let options_for_guard = options.clone();
         let options_for_mount = options.clone();
+        let host_element_guard = host_element;
+        let host_element_for_action = host_element;
         let mounted_widget_guard = mounted_widget;
         let mounted_widget_for_action = mounted_widget;
         let mounted_widget_done = mounted_widget;
         crate::lifecycle::use_loaded_bridge_action(
-            (&id, &options),
+            &options,
             move || {
+                let Some(element) = mounted_host_element(host_element_guard) else {
+                    return true;
+                };
                 mounted_widget_guard.read().as_ref().is_none_or(|mounted| {
-                    mounted.id != id_for_guard || mounted.options != options_for_guard
+                    mounted.options != options_for_guard
+                        || !js_sys::Object::is(mounted.element.as_ref(), element.as_ref())
                 })
             },
-            HOST_RETRY_MS,
-            HOST_DEADLINE_MS,
+            HOST_MOUNT_RETRY_MS,
+            HOST_MOUNT_DEADLINE_MS,
             crate::core::ClerkError::Js(format!(
-                "clerk widget host element #{id} did not appear within {HOST_DEADLINE_MS} ms; the widget cannot mount"
+                "clerk widget host element was not mounted within {HOST_MOUNT_DEADLINE_MS} ms; the widget cannot mount"
             )),
             move |bridge| {
-                let Some(el) = host_element(&id_for_mount) else {
+                let Some(element) = mounted_host_element(host_element_for_action) else {
                     return Ok(BridgeAction::Deferred);
                 };
-                // Unmount the previously mounted element (which may differ
-                // from `el` after an id change) before mounting fresh.
-                if let Some(mounted) = mounted_widget_for_action.read().as_ref() {
+                // Unmount the previously mounted element, which may differ
+                // after a renderer replaces the host, before mounting fresh.
+                let previously_mounted = { mounted_widget_for_action.read().as_ref().cloned() };
+                if let Some(mounted) = previously_mounted {
                     widget_local.unmount(bridge, &mounted.element);
+                    let mut mounted_widget = mounted_widget_for_action;
+                    mounted_widget.set(None);
                 }
-                widget_local.mount(bridge, &el, &options_for_mount)?;
+                widget_local.mount(bridge, &element, &options_for_mount)?;
                 Ok(BridgeAction::Done(MountedWidget {
-                    id: id_for_done.clone(),
                     options: options_for_mount.clone(),
-                    element: el,
+                    element,
                 }))
             },
             move |mounted| {
@@ -253,7 +254,7 @@ fn WidgetLifecycle(
         });
     }
     #[cfg(not(clerk_client))]
-    let _ = (&options, mounted_widget);
+    let _ = (&options, host_element, mounted_widget);
     rsx! {}
 }
 
@@ -273,45 +274,17 @@ fn spread_id(attributes: &[Attribute]) -> Option<String> {
 }
 
 #[cfg(clerk_client)]
-fn host_element(id: &str) -> Option<web_sys::Element> {
-    let window = web_sys::window()?;
-    let doc = window.document()?;
-    doc.get_element_by_id(id)
-}
-
-fn generated_host_id(widget: Widget) -> String {
-    // Scope ids reset with each VirtualDom tree, unlike process-global counters
-    // that drift between SSR requests and browser hydration.
-    generated_host_id_from_scope(widget, dioxus::dioxus_core::current_scope_id())
-}
-
-fn generated_host_id_from_scope(widget: Widget, scope_id: dioxus::prelude::ScopeId) -> String {
-    format!("{}-{}", widget.host_id_prefix(), scope_id.0)
+fn mounted_host_element(host_element: Signal<Option<Rc<MountedData>>>) -> Option<web_sys::Element> {
+    host_element
+        .read()
+        .as_ref()
+        .and_then(|mounted| mounted.downcast::<web_sys::Element>())
+        .cloned()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dioxus::prelude::ScopeId;
-    use std::sync::Mutex;
-
-    static TEST_LOCK: Mutex<()> = Mutex::new(());
-    static RECORDED_IDS: Mutex<Vec<String>> = Mutex::new(Vec::new());
-
-    #[test]
-    fn generated_host_id_is_stable_for_the_same_widget_scope() {
-        let first = generated_host_id_from_scope(Widget::SignIn, ScopeId(42));
-        let second = generated_host_id_from_scope(Widget::SignIn, ScopeId(42));
-
-        assert_eq!(first, second);
-        assert_eq!(first, "clerk-signin-42");
-    }
-
-    #[test]
-    fn task_setup_mfa_has_stable_generated_host_id() {
-        let id = generated_host_id_from_scope(Widget::TaskSetupMfa, ScopeId(42));
-        assert_eq!(id, "clerk-tasksetupmfa-42");
-    }
 
     #[test]
     fn spread_id_reads_text_id_attribute() {
@@ -335,44 +308,61 @@ mod tests {
     }
 
     #[test]
-    fn generated_host_id_distinguishes_widget_instances_by_scope() {
-        assert_ne!(
-            generated_host_id_from_scope(Widget::SignIn, ScopeId(42)),
-            generated_host_id_from_scope(Widget::SignIn, ScopeId(43))
-        );
+    fn widget_without_caller_id_omits_the_host_id_attribute() {
+        let mut dom = VirtualDom::new(|| rsx! { crate::SignIn {} });
+        let mutations = dom.rebuild_to_vec();
+
+        assert!(!mutations.edits.iter().any(|edit| matches!(
+            edit,
+            dioxus::dioxus_core::Mutation::SetAttribute {
+                name: "id",
+                value,
+                ..
+            } if !matches!(value, AttributeValue::None)
+        )));
     }
 
     #[test]
-    fn generated_host_id_resets_with_each_virtual_dom_tree() {
-        let _guard = TEST_LOCK.lock().unwrap();
+    fn widget_keeps_an_explicit_host_id() {
+        let mut dom = VirtualDom::new(|| rsx! { crate::SignIn { id: "sign-in-host" } });
+        let mutations = dom.rebuild_to_vec();
 
-        let first = generated_host_id_from_fresh_dom();
-        let second = generated_host_id_from_fresh_dom();
-
-        assert_eq!(first, second);
+        assert!(mutations.edits.iter().any(|edit| matches!(
+            edit,
+            dioxus::dioxus_core::Mutation::SetAttribute {
+                name: "id",
+                value: AttributeValue::Text(value),
+                ..
+            } if value == "sign-in-host"
+        )));
     }
 
-    fn generated_host_id_from_fresh_dom() -> String {
-        RECORDED_IDS.lock().unwrap().clear();
-        let mut dom = VirtualDom::new(IdProbe);
+    #[test]
+    fn widget_keeps_a_spread_host_id() {
+        let mut dom = VirtualDom::new(SpreadIdWidget);
+        let mutations = dom.rebuild_to_vec();
 
-        dom.rebuild_in_place();
-
-        RECORDED_IDS
-            .lock()
-            .unwrap()
-            .first()
-            .cloned()
-            .expect("IdProbe records a generated id")
+        assert!(mutations.edits.iter().any(|edit| matches!(
+            edit,
+            dioxus::dioxus_core::Mutation::SetAttribute {
+                name: "id",
+                value: AttributeValue::Text(value),
+                ..
+            } if value == "spread-sign-in-host"
+        )));
     }
 
     #[component]
-    fn IdProbe() -> Element {
-        RECORDED_IDS
-            .lock()
-            .unwrap()
-            .push(generated_host_id(Widget::SignIn));
-        rsx! {}
+    fn SpreadIdWidget() -> Element {
+        render(
+            Widget::SignIn,
+            WidgetProps::new(
+                serde_json::Value::Null,
+                rsx! {},
+                None,
+                vec![Attribute::new("id", "spread-sign-in-host", None, false)],
+            ),
+        )
     }
 }
 

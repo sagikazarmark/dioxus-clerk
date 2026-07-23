@@ -2,10 +2,16 @@
 
 mod wasm_support;
 
-use dioxus::dioxus_core::{AttributeValue, Mutation, Mutations, NoOpMutations};
+use dioxus::dioxus_core::{ElementId, Event, Mutation, Mutations, NoOpMutations};
+use dioxus::html::{
+    AnimationData, CancelData, ClipboardData, CompositionData, DragData, FocusData, FormData,
+    HtmlEventConverter, ImageData, KeyboardData, MediaData, MountedData, MouseData,
+    PlatformEventData, PointerData, RenderedElementBacking, ResizeData, ScrollData, SelectionData,
+    ToggleData, TouchData, TransitionData, VisibleData, WheelData,
+};
 use dioxus::prelude::*;
 use gloo_timers::future::TimeoutFuture;
-use std::cell::RefCell;
+use std::{any::Any, cell::RefCell, rc::Rc};
 use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
@@ -19,14 +25,14 @@ thread_local! {
 }
 
 #[wasm_bindgen_test(async)]
-async fn mounted_ui_retries_until_host_exists_and_mounts_once() {
+async fn mounted_ui_waits_for_mounted_element_and_mounts_once() {
     set_test_options(serde_json::Value::Null);
     reset_provider_errors();
     wasm_support::clear_clerk();
     let clerk = wasm_support::install_clerk_mock(false);
 
     let mut dom = VirtualDom::new(SignInTestApp);
-    let host_id = rebuild_and_capture_host_id(&mut dom);
+    let host = rebuild_and_capture_host_mount(&mut dom);
 
     wasm_support::settle_until(&mut dom, || {
         wasm_support::number_prop(&clerk, "loadCallCount") == 1.0
@@ -37,7 +43,7 @@ async fn mounted_ui_retries_until_host_exists_and_mounts_once() {
     assert_eq!(wasm_support::number_prop(&clerk, "mountCallCount"), 0.0);
     assert!(!provider_saw_error());
 
-    wasm_support::append_mount_element_with_id(&host_id);
+    let element = dispatch_host_mount(&mut dom, host, "mounted-sign-in");
 
     drive_mounted_ui(&mut dom, &clerk, 1.0).await;
 
@@ -46,14 +52,14 @@ async fn mounted_ui_retries_until_host_exists_and_mounts_once() {
         wasm_support::get_prop(&clerk, "lastMountedElementId")
             .as_string()
             .as_deref(),
-        Some(host_id.as_str())
+        Some("mounted-sign-in")
     );
 
     wasm_support::settle_ticks(&mut dom, 3).await;
 
     assert_eq!(wasm_support::number_prop(&clerk, "mountCallCount"), 1.0);
 
-    wasm_support::remove_element_by_id(&host_id);
+    drop(element);
 }
 
 #[wasm_bindgen_test(async)]
@@ -63,8 +69,8 @@ async fn mounted_ui_unmounts_after_successful_mount() {
     let clerk = wasm_support::install_clerk_mock(false);
 
     let mut dom = VirtualDom::new(SignInTestApp);
-    let host_id = rebuild_and_capture_host_id(&mut dom);
-    wasm_support::append_mount_element_with_id(&host_id);
+    let host = rebuild_and_capture_host_mount(&mut dom);
+    let element = dispatch_host_mount(&mut dom, host, "mounted-sign-in");
 
     drive_mounted_ui(&mut dom, &clerk, 1.0).await;
 
@@ -80,7 +86,7 @@ async fn mounted_ui_unmounts_after_successful_mount() {
     }
 
     let unmount_count = wasm_support::number_prop(&clerk, "unmountCallCount");
-    wasm_support::remove_element_by_id(&host_id);
+    drop(element);
 
     assert_eq!(unmount_count, 1.0);
 }
@@ -92,7 +98,7 @@ async fn mounted_ui_does_not_unmount_without_successful_mount() {
     let clerk = wasm_support::install_clerk_mock(false);
 
     let mut dom = VirtualDom::new(SignInTestApp);
-    let _host_id = rebuild_and_capture_host_id(&mut dom);
+    let _host = rebuild_and_capture_host_mount(&mut dom);
 
     wasm_support::settle_until(&mut dom, || {
         wasm_support::number_prop(&clerk, "loadCallCount") == 1.0
@@ -120,12 +126,12 @@ async fn mounted_ui_mount_failure_surfaces_provider_error() {
     wasm_support::make_sign_in_mount_throw(&clerk, "mount failed");
 
     let mut dom = VirtualDom::new(SignInTestApp);
-    let host_id = rebuild_and_capture_host_id(&mut dom);
-    wasm_support::append_mount_element_with_id(&host_id);
+    let host = rebuild_and_capture_host_mount(&mut dom);
+    let element = dispatch_host_mount(&mut dom, host, "mounted-sign-in");
 
     wasm_support::settle_until(&mut dom, || provider_error_contains("mount failed")).await;
 
-    wasm_support::remove_element_by_id(&host_id);
+    drop(element);
     assert!(provider_error_contains("mount failed"));
 }
 
@@ -136,8 +142,8 @@ async fn mounted_ui_remounts_when_options_change() {
     let clerk = wasm_support::install_clerk_mock(false);
 
     let mut dom = VirtualDom::new(UpdatingSignInTestApp);
-    let host_id = rebuild_and_capture_host_id(&mut dom);
-    wasm_support::append_mount_element_with_id(&host_id);
+    let host = rebuild_and_capture_host_mount(&mut dom);
+    let element = dispatch_host_mount(&mut dom, host, "mounted-sign-in");
 
     drive_mounted_ui(&mut dom, &clerk, 1.0).await;
     wait_for_unmount_count(&clerk, 1.0).await;
@@ -153,8 +159,70 @@ async fn mounted_ui_remounts_when_options_change() {
 
     drop(dom);
     wait_for_unmount_count(&clerk, 2.0).await;
-    wasm_support::remove_element_by_id(&host_id);
+    drop(element);
     assert!(!provider_saw_error());
+}
+
+#[wasm_bindgen_test(async)]
+async fn mounted_ui_remounts_when_renderer_replaces_host_element() {
+    reset_provider_errors();
+    wasm_support::clear_clerk();
+    let clerk = wasm_support::install_clerk_mock(false);
+
+    let mut dom = VirtualDom::new(SignInTestApp);
+    let host = rebuild_and_capture_host_mount(&mut dom);
+    let first_element = dispatch_host_mount(&mut dom, host, "first-sign-in-host");
+    drive_mounted_ui(&mut dom, &clerk, 1.0).await;
+
+    let second_element = dispatch_host_mount(&mut dom, host, "replacement-sign-in-host");
+    drive_mounted_ui(&mut dom, &clerk, 2.0).await;
+
+    assert_eq!(wasm_support::number_prop(&clerk, "unmountCallCount"), 1.0);
+    assert_eq!(
+        wasm_support::get_prop(&clerk, "lastUnmountedElementId")
+            .as_string()
+            .as_deref(),
+        Some("first-sign-in-host")
+    );
+    assert_eq!(
+        wasm_support::get_prop(&clerk, "lastMountedElementId")
+            .as_string()
+            .as_deref(),
+        Some("replacement-sign-in-host")
+    );
+
+    drop(dom);
+    wait_for_unmount_count(&clerk, 2.0).await;
+    drop((first_element, second_element));
+    assert!(!provider_saw_error());
+}
+
+#[wasm_bindgen_test(async)]
+async fn failed_replacement_mount_clears_stale_mounted_element() {
+    reset_provider_errors();
+    wasm_support::clear_clerk();
+    let clerk = wasm_support::install_clerk_mock(false);
+
+    let mut dom = VirtualDom::new(SignInTestApp);
+    let host = rebuild_and_capture_host_mount(&mut dom);
+    let first_element = dispatch_host_mount(&mut dom, host, "first-sign-in-host");
+    drive_mounted_ui(&mut dom, &clerk, 1.0).await;
+
+    wasm_support::make_sign_in_mount_throw(&clerk, "replacement mount failed");
+    let second_element = dispatch_host_mount(&mut dom, host, "replacement-sign-in-host");
+    wasm_support::settle_until(&mut dom, || {
+        provider_error_contains("replacement mount failed")
+    })
+    .await;
+
+    assert_eq!(wasm_support::number_prop(&clerk, "unmountCallCount"), 1.0);
+
+    drop(dom);
+    for _ in 0..3 {
+        TimeoutFuture::new(25).await;
+    }
+    drop((first_element, second_element));
+    assert_eq!(wasm_support::number_prop(&clerk, "unmountCallCount"), 1.0);
 }
 
 #[wasm_bindgen_test(async)]
@@ -163,11 +231,13 @@ async fn mounted_ui_public_widgets_mount_once_forward_options_and_unmount() {
     let clerk = wasm_support::install_clerk_mock(false);
 
     let mut dom = VirtualDom::new(AllPublicWidgetsTestApp);
-    let host_ids = rebuild_and_capture_host_ids(&mut dom);
-    assert_eq!(host_ids.len(), 4);
-    for host_id in &host_ids {
-        wasm_support::append_mount_element_with_id(host_id);
-    }
+    let hosts = rebuild_and_capture_host_mounts(&mut dom);
+    assert_eq!(hosts.len(), 4);
+    let elements = dispatch_host_mounts(&mut dom, &hosts);
+    let host_ids = elements
+        .iter()
+        .map(web_sys::Element::id)
+        .collect::<Vec<_>>();
 
     drive_mounted_ui(&mut dom, &clerk, 4.0).await;
 
@@ -183,9 +253,7 @@ async fn mounted_ui_public_widgets_mount_once_forward_options_and_unmount() {
     wait_for_unmount_count(&clerk, 4.0).await;
 
     let unmount_count = wasm_support::number_prop(&clerk, "unmountCallCount");
-    for host_id in &host_ids {
-        wasm_support::remove_element_by_id(host_id);
-    }
+    drop(elements);
     assert_eq!(unmount_count, 4.0);
     assert_unmounted_host_ids(&clerk, &host_ids);
 }
@@ -196,11 +264,9 @@ async fn mounted_ui_public_widgets_do_not_mount_before_auth_loadedness() {
     let clerk = wasm_support::install_pending_load_clerk();
 
     let mut dom = VirtualDom::new(AllPublicWidgetsTestApp);
-    let host_ids = rebuild_and_capture_host_ids(&mut dom);
-    assert_eq!(host_ids.len(), 4);
-    for host_id in &host_ids {
-        wasm_support::append_mount_element_with_id(host_id);
-    }
+    let hosts = rebuild_and_capture_host_mounts(&mut dom);
+    assert_eq!(hosts.len(), 4);
+    let elements = dispatch_host_mounts(&mut dom, &hosts);
 
     wasm_support::settle_ticks(&mut dom, 5).await;
 
@@ -208,9 +274,7 @@ async fn mounted_ui_public_widgets_do_not_mount_before_auth_loadedness() {
     assert_eq!(wasm_support::number_prop(&clerk, "mountCallCount"), 0.0);
 
     drop(dom);
-    for host_id in &host_ids {
-        wasm_support::remove_element_by_id(host_id);
-    }
+    drop(elements);
 }
 
 async fn drive_mounted_ui(
@@ -233,40 +297,105 @@ async fn wait_for_unmount_count(clerk: &wasm_bindgen::JsValue, expected_unmount_
     }
 }
 
-fn rebuild_and_capture_host_id(dom: &mut VirtualDom) -> String {
-    let mut host_ids = rebuild_and_capture_host_ids(dom);
-    assert_eq!(host_ids.len(), 1);
-    host_ids.remove(0)
+fn rebuild_and_capture_host_mount(dom: &mut VirtualDom) -> ElementId {
+    let mut hosts = rebuild_and_capture_host_mounts(dom);
+    assert_eq!(hosts.len(), 1);
+    hosts.remove(0)
 }
 
-fn rebuild_and_capture_host_ids(dom: &mut VirtualDom) -> Vec<String> {
+fn rebuild_and_capture_host_mounts(dom: &mut VirtualDom) -> Vec<ElementId> {
+    dioxus::html::set_event_converter(Box::new(MountedEventConverter));
     let mut mutations = Mutations::default();
     dom.rebuild(&mut mutations);
-    let host_ids = host_ids_from_mutations(&mutations);
-    assert!(
-        !host_ids.is_empty(),
-        "public widget should create a host id"
-    );
-    dom.render_immediate(&mut NoOpMutations);
-    host_ids
-}
-
-fn host_ids_from_mutations(mutations: &Mutations) -> Vec<String> {
-    mutations
+    let hosts = mutations
         .edits
         .iter()
-        .filter_map(|edit| {
-            let Mutation::SetAttribute {
-                name,
-                value: AttributeValue::Text(value),
-                ..
-            } = edit
-            else {
-                return None;
-            };
-            (*name == "id" && !value.is_empty()).then(|| value.clone())
+        .filter_map(|edit| match edit {
+            Mutation::NewEventListener { name, id } if name == "mounted" => Some(*id),
+            _ => None,
         })
+        .collect::<Vec<_>>();
+    assert!(
+        !hosts.is_empty(),
+        "public widget should register a mounted-element listener"
+    );
+    dom.render_immediate(&mut NoOpMutations);
+    hosts
+}
+
+fn dispatch_host_mount(dom: &mut VirtualDom, host: ElementId, id: &str) -> web_sys::Element {
+    let element = wasm_support::window()
+        .document()
+        .expect("browser document")
+        .create_element("div")
+        .expect("host element");
+    element.set_id(id);
+    let data = Rc::new(PlatformEventData::new(Box::new(element.clone()))) as Rc<dyn Any>;
+    dom.runtime()
+        .handle_event("mounted", Event::new(data, false), host);
+    dom.render_immediate(&mut NoOpMutations);
+    element
+}
+
+fn dispatch_host_mounts(dom: &mut VirtualDom, hosts: &[ElementId]) -> Vec<web_sys::Element> {
+    hosts
+        .iter()
+        .enumerate()
+        .map(|(index, host)| dispatch_host_mount(dom, *host, &format!("mounted-host-{index}")))
         .collect()
+}
+
+struct MountedElementBacking(web_sys::Element);
+
+impl RenderedElementBacking for MountedElementBacking {
+    fn as_any(&self) -> &dyn Any {
+        &self.0
+    }
+}
+
+struct MountedEventConverter;
+
+macro_rules! unsupported_event_converters {
+    ($($method:ident => $data:ty),* $(,)?) => {
+        $(
+            fn $method(&self, _event: &PlatformEventData) -> $data {
+                unreachable!("mounted UI tests only dispatch mounted events")
+            }
+        )*
+    };
+}
+
+impl HtmlEventConverter for MountedEventConverter {
+    unsupported_event_converters! {
+        convert_animation_data => AnimationData,
+        convert_cancel_data => CancelData,
+        convert_clipboard_data => ClipboardData,
+        convert_composition_data => CompositionData,
+        convert_drag_data => DragData,
+        convert_focus_data => FocusData,
+        convert_form_data => FormData,
+        convert_image_data => ImageData,
+        convert_keyboard_data => KeyboardData,
+        convert_media_data => MediaData,
+        convert_mouse_data => MouseData,
+        convert_pointer_data => PointerData,
+        convert_resize_data => ResizeData,
+        convert_scroll_data => ScrollData,
+        convert_selection_data => SelectionData,
+        convert_toggle_data => ToggleData,
+        convert_touch_data => TouchData,
+        convert_transition_data => TransitionData,
+        convert_visible_data => VisibleData,
+        convert_wheel_data => WheelData,
+    }
+
+    fn convert_mounted_data(&self, event: &PlatformEventData) -> MountedData {
+        let element = event
+            .downcast::<web_sys::Element>()
+            .expect("mounted event carries a web element")
+            .clone();
+        MountedData::new(MountedElementBacking(element))
+    }
 }
 
 fn assert_js_string_prop(options: &wasm_bindgen::JsValue, key: &str, expected: &str) {
