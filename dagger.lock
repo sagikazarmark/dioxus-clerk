@@ -1,3 +1,4 @@
 [["version","1"]]
 ["","container.from",["docker.io/library/rust:1.97-slim-trixie","linux/arm64"],"sha256:14c4fe50ea427dc42381a1a09a9a839c1d2346a2e508cd491bf02c659dbc0ed7","pin"]
-["","git.head",["https://github.com/sagikazarmark/daggerverse-beta"],"a9ec8c1cb616c7e8660c39ab5af871171d4863a1","float"]
+["","container.from",["ghcr.io/sagikazarmark/dang:latest","linux/arm64"],"sha256:8f2e579e85298fda0c5eea8fac19610dd690c131a0a47a9ec770204383aceb66","pin"]
+["","git.head",["https://github.com/sagikazarmark/daggerverse-beta"],"124c60b10d3e728fa8a250dc10450e545423dc56","float"]
