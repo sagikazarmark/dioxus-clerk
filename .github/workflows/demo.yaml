@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 env:
-  DAGGER_VERSION: 86d1d2f5791bcf3213d56903cfa81a3ba0abe54a
+  DAGGER_VERSION: v1.0.0-beta.7
 
 jobs:
   production:
@@ -38,8 +38,8 @@ jobs:
             worker deploy
             --account-id ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
             --api-token env://CLOUDFLARE_API_TOKEN
-          # version: ${{ env.DAGGER_VERSION }}
-          commit: ${{ env.DAGGER_VERSION }}
+          version: ${{ env.DAGGER_VERSION }}
+          # commit: ${{ env.DAGGER_VERSION }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
@@ -77,8 +77,8 @@ jobs:
             --api-token env://CLOUDFLARE_API_TOKEN
             --github-token env://GITHUB_TOKEN
             --repository ${{ github.repository }}
-          # version: ${{ env.DAGGER_VERSION }}
-          commit: ${{ env.DAGGER_VERSION }}
+          version: ${{ env.DAGGER_VERSION }}
+          # commit: ${{ env.DAGGER_VERSION }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           GITHUB_TOKEN: ${{ github.token }}
