@@ -1,5 +1,5 @@
 type Demo {
-  let jsEnv: JavascriptEnvironment!
+  let node: NodeEnvironment!
   let dioxus: Dioxus!
   let workerBuild: WorkerBuild!
   let envFile: File
@@ -20,7 +20,7 @@ type Demo {
     let cargoRegistryArchiveCache = Dagger.cacheVolume("cargo-registry-cache")
     let cargoGitDbCache = Dagger.cacheVolume("cargo-git-db")
 
-    self.jsEnv = Dagger.javascriptEnvironment(install: true, locked: true)
+    self.node = Dagger.nodeEnvironment(install: true, locked: true)
     self.dioxus = Dagger.dioxus(
       container: rustContainer,
       envFile: envFile,
@@ -56,7 +56,7 @@ type Demo {
   """
   style(ws: Workspace!): File! {
     self
-      .jsEnv
+      .node
       .container(ws)
       .withExec(["npm", "exec", "--", "tailwindcss", "-i", "src/style.css", "-o", "style.css", "--minify"])
       .file("style.css")
