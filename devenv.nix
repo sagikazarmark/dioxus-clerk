@@ -1,4 +1,4 @@
-{ pkgs, lib, ... }:
+{ pkgs, ... }:
 
 {
   dotenv.enable = true;
@@ -9,21 +9,19 @@
   # Required by arborium
   env.CC_wasm32_unknown_unknown = "${pkgs.llvmPackages.clang-unwrapped}/bin/clang";
 
-  packages =
-    with pkgs;
-    [
-      lld
-      cargo-audit
-      cargo-deny
-      cargo-dist
-      cargo-release
-      cargo-watch
-      wasm-pack
-    ]
-    ++ lib.optionals pkgs.stdenv.isLinux [
-      pkgs.chromium
-      pkgs.chromedriver
-    ];
+  packages = with pkgs; [
+    lld
+
+    cargo-audit
+    cargo-deny
+    cargo-dist
+    cargo-release
+    cargo-watch
+
+    dioxus-cli
+    wasm-pack
+    wasm-bindgen-cli_0_2_126
+  ];
 
   languages = {
     rust = {

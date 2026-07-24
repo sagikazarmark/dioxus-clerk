@@ -1,5 +1,5 @@
 type Demo {
-  let jsEnv: JavascriptEnvironment!
+  let node: NodeEnvironment!
   let dioxus: Dioxus!
   let workerBuild: WorkerBuild!
   let envFile: File
@@ -20,11 +20,11 @@ type Demo {
     let cargoRegistryArchiveCache = Dagger.cacheVolume("cargo-registry-cache")
     let cargoGitDbCache = Dagger.cacheVolume("cargo-git-db")
 
-    self.jsEnv = Dagger.javascriptEnvironment(install: true, locked: true)
+    self.node = Dagger.nodeEnvironment(install: true, locked: true)
     self.dioxus = Dagger.dioxus(
       container: rustContainer,
       envFile: envFile,
-      noCache: true, # Disabling target cache: if it gets evicted during a build, the build will fail.
+      # noCache: true, # Disabling target cache: if it gets evicted during a build, the build will fail.
       cargoRegistryIndexCache: cargoRegistryIndexCache,
       cargoRegistryArchiveCache: cargoRegistryArchiveCache,
       cargoGitDbCache: cargoGitDbCache,
@@ -32,7 +32,7 @@ type Demo {
     self.workerBuild = Dagger.workerBuild(
       container: rustContainer,
       envFile: envFile,
-      noCache: true, # Disabling target cache: if it gets evicted during a build, the build will fail.
+      # noCache: true, # Disabling target cache: if it gets evicted during a build, the build will fail.
       cargoRegistryIndexCache: cargoRegistryIndexCache,
       cargoRegistryArchiveCache: cargoRegistryArchiveCache,
       cargoGitDbCache: cargoGitDbCache,
@@ -56,28 +56,22 @@ type Demo {
   """
   style(ws: Workspace!): File! {
     self
-      .jsEnv
+      .node
       .container(ws)
-      .withExec(["npm", "exec", "--", "tailwindcss", "-i", "src/style.css", "-o", "build/style.css", "--minify"])
-      .file("build/style.css")
+      .withExec(["npm", "exec", "--", "tailwindcss", "-i", "src/style.css", "-o", "style.css", "--minify"])
+      .file("style.css")
   }
 
   let withAssets(ws: Workspace!): Workspace! {
-    # DAGGER_TODO: need better way to pass module outputs to other modules
-    let dir = ws
-      .directory("/", gitignore: true)
-      .withDirectory(ws.cwd, self.assets(ws))
-
     # DAGGER_TODO:
     # generated assets are normally ignored by git, so adding them back causes
     # them to be ignored next time workspace is called
-    dir = dir
+    ws
       .withNewFile(
-        ws.cwd + "/.gitignore",
-        dir.file(ws.cwd + "/.gitignore").contents + "\n" + ["!/build/style.css"].join("\n"),
+        ".gitignore",
+        ws.file(".gitignore").contents + "\n" + ["!/build/style.css"].join("\n"),
       )
-
-    dir.asWorkspace(ws.cwd)
+      .withNewDirectory("build", self.assets(ws).directory("build"))
   }
 
   """

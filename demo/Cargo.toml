@@ -58,7 +58,8 @@ debug = false
 lto = true
 codegen-units = 1
 panic = "abort"
-strip = true
+# wasm-bindgen needs the target_features section when generating Worker catch wrappers.
+strip = false
 incremental = false
 
 [workspace]
