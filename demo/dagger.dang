@@ -71,7 +71,7 @@ type Demo {
         ".gitignore",
         ws.file(".gitignore").contents + "\n" + ["!/build/style.css"].join("\n"),
       )
-      .withNewFile("build/style.css", self.style(ws).contents)
+      .withNewDirectory("build", self.assets(ws).directory("build"))
   }
 
   """
