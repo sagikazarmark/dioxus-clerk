@@ -6,7 +6,7 @@ updates:
     schedule:
       interval: daily
     groups:
-      cargo-dependencies:
+      all:
         patterns:
           - "*"
 
@@ -15,7 +15,7 @@ updates:
     schedule:
       interval: daily
     groups:
-      github-actions:
+      all:
         patterns:
           - "*"
     exclude-paths:
