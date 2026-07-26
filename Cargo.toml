@@ -81,7 +81,7 @@ dioxus-html = { version = "0.7", default-features = false, features = ["serializ
 # explicitly; this crate mints RS256 test tokens with it and ships nothing
 # from it. Without this, token signing panics with "Could not automatically
 # determine the process-level CryptoProvider".
-jsonwebtoken = { version = "10", features = ["rust_crypto"] }
+jsonwebtoken = { version = "11", features = ["rust_crypto"] }
 # Keep validation off transitive releases that require a newer Rust than this crate's MSRV.
 simple_asn1 = "=0.6.4"
 tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread", "net"] }
