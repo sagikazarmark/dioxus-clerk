@@ -49,7 +49,7 @@
 //! | *(none)* | ✅ | Client components, hooks, guards, Clerk widgets, and SSR consumption. |
 //! | `server` | | Axum middleware, extractors, `#[server]` context readers, and SSR initial-state helpers. Enable on the native server build only. |
 //! | `worker` | | `server` plus `Send`-wrapped middleware futures for single-threaded Cloudflare Workers. |
-//! | `testing` | | Test helpers ([`testing::TestClerk`]) that mint Clerk-shaped session tokens locally. Enable under `[dev-dependencies]` only. |
+//! | `testing` | | Test helpers (`TestClerk`) that mint Clerk-shaped session tokens locally. Enable under `[dev-dependencies]` only. |
 //!
 //! [Dioxus]: https://dioxuslabs.com
 

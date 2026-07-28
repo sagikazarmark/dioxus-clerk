@@ -32,14 +32,14 @@ Most apps depend on `dioxus-clerk` directly:
 
 ```toml
 [dependencies]
-dioxus-clerk = "0.2"
+dioxus-clerk = "0.4"
 ```
 
 Fullstack apps enable the `server` feature on the native server build:
 
 ```toml
 [dependencies]
-dioxus-clerk = "0.2"
+dioxus-clerk = "0.4"
 
 [features]
 default = []

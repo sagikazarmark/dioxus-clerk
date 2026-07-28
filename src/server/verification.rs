@@ -123,9 +123,9 @@ impl Verifier {
     }
 }
 
-/// Parses a configured JWKS document, rejecting one with no keys: it would
-/// verify nothing, and failing at construction points at the config instead of
-/// surfacing later as every token being invalid.
+/// Parses a configured JWKS document, rejecting one that cannot verify a Clerk
+/// session token: it would verify nothing, and failing at construction points at
+/// the config instead of surfacing later as every token being invalid.
 fn parse_static_jwks(jwks_json: &str) -> Result<KeySet, ClerkError> {
     let keyset: KeySet = serde_json::from_str(jwks_json).map_err(|error| {
         ClerkError::InvalidConfig(format!("invalid static Clerk JWKS: {error}"))
@@ -134,6 +134,12 @@ fn parse_static_jwks(jwks_json: &str) -> Result<KeySet, ClerkError> {
     if keyset.is_empty() {
         return Err(ClerkError::InvalidConfig(
             "static Clerk JWKS contains no keys".into(),
+        ));
+    }
+
+    if !jwt::has_rs256_verification_key(&keyset) {
+        return Err(ClerkError::InvalidConfig(
+            "static Clerk JWKS contains no RS256 signing key with a key id".into(),
         ));
     }
 

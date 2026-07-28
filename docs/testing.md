@@ -399,16 +399,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "target/clerk-test-key.pem",
     )?);
 
+    // Keyed by user id: the browser side looks a token up by the same constant
+    // it hands the fake, so the cookie and the fake cannot drift apart.
     let long = std::time::Duration::from_secs(3600);
     let tokens = serde_json::json!({
-        "admin": clerk.token_for(
-            &clerk.session("user_admin")
+        "user_test_admin": clerk.token_for(
+            &clerk.session("user_test_admin")
                 .with_organization("org_acme")
                 .with_organization_role("org:admin")
                 .with_lifetime(long),
         )?,
-        "member": clerk.token_for(
-            &clerk.session("user_member")
+        "user_test_member": clerk.token_for(
+            &clerk.session("user_test_member")
                 .with_organization("org_acme")
                 .with_organization_role("org:member")
                 .with_lifetime(long),

@@ -364,6 +364,25 @@ fn an_empty_static_jwks_is_rejected_at_construction() {
 }
 
 #[test]
+fn a_static_jwks_without_an_rs256_signing_key_is_rejected_at_construction() {
+    // Well-formed, non-empty, and useless: an EC key can never verify a Clerk
+    // session token, so every request would come back invalid.
+    let config = ClerkAuthLayerConfig::new("sk_test_unused").with_static_jwks(
+        r#"{"keys":[{"kty":"EC","kid":"ec","use":"sig","alg":"ES256","crv":"P-256",
+            "x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",
+            "y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM"}]}"#,
+    );
+
+    let error =
+        ClerkAuthLayer::from_config(config).expect_err("an ES256 keyset verifies no Clerk token");
+
+    assert!(
+        error.to_string().contains("RS256"),
+        "error should explain the unusable keyset: {error}"
+    );
+}
+
+#[test]
 fn a_malformed_static_jwks_is_rejected_at_construction() {
     let config = ClerkAuthLayerConfig::new("sk_test_unused").with_static_jwks("not json");
 
@@ -387,6 +406,22 @@ fn an_empty_secret_key_is_still_rejected_when_keys_are_fetched() {
         .expect_err("fetching needs a secret key");
 
     assert!(error.to_string().contains("secret key"), "{error}");
+}
+
+#[tokio::test]
+async fn a_request_without_credentials_is_reported_as_missing() {
+    let clerk = TestClerk::new().unwrap();
+
+    let response = outcome_app(clerk.layer().unwrap())
+        .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+        .await
+        .expect("router response");
+
+    assert_eq!(response.status(), StatusCode::OK);
+    match deserialize_outcome(response).await {
+        TestOutcome::Missing => {}
+        other => panic!("expected no credentials to be missing, got {other:?}"),
+    }
 }
 
 #[test]

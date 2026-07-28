@@ -11,7 +11,9 @@
 //! signed-in user so you can test what your app does — [`TestClerk`] is the
 //! whole API:
 //!
-//! ```no_run
+// `layer` needs the `server` feature; this one is only compiled when it is on.
+#![cfg_attr(feature = "server", doc = "```no_run")]
+#![cfg_attr(not(feature = "server"), doc = "```ignore")]
 //! use dioxus_clerk::testing::TestClerk;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -30,7 +32,8 @@
 //! that should be rejected — [`TestSession`] builds the claims and
 //! [`TestIssuer`] signs them:
 //!
-//! ```no_run
+#![cfg_attr(feature = "server", doc = "```no_run")]
+#![cfg_attr(not(feature = "server"), doc = "```ignore")]
 //! use dioxus_clerk::server::{ClerkAuthLayer, ClerkAuthLayerConfig};
 //! use dioxus_clerk::testing::{TestIssuer, TestSession};
 //!
@@ -88,6 +91,12 @@
 //! production [`ClerkAuthLayer`](crate::server::ClerkAuthLayer) at a
 //! [`jwks_json`](TestIssuer::jwks_json) from this module.
 
+// This module documents how its tokens reach `ClerkAuthLayer`, so it links into
+// `crate::server` — which does not exist when `testing` is enabled on its own.
+// The links are correct wherever they are readable (docs.rs builds every
+// feature); only that one configuration cannot resolve them.
+#![cfg_attr(not(feature = "server"), allow(rustdoc::broken_intra_doc_links))]
+
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -109,6 +118,7 @@ const KEY_MODULUS_BITS: usize = 2048;
 
 /// Something went wrong minting a test token or loading a test key.
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum TestIssuerError {
     /// The key file could not be read or written.
     #[error("failed to access test key at {path}: {source}")]
@@ -147,7 +157,8 @@ pub enum TestIssuerError {
 /// someone, now test what my app does" — is two calls and needs no knowledge of
 /// JWKS or token claims:
 ///
-/// ```no_run
+#[cfg_attr(feature = "server", doc = "```no_run")]
+#[cfg_attr(not(feature = "server"), doc = "```ignore")]
 /// # use dioxus_clerk::testing::TestClerk;
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let clerk = TestClerk::new()?;
@@ -360,9 +371,13 @@ impl TestIssuer {
             std::fs::create_dir_all(parent).map_err(key_file_error)?;
         }
 
-        // Write to a process-unique temporary file, then rename into place:
-        // a reader never observes a half-written key.
-        let temporary = path.with_extension(format!("tmp{}", std::process::id()));
+        // Write to a writer-unique temporary file, then rename into place: a
+        // reader never observes a half-written key. The counter matters as much
+        // as the pid — the natural usage is one call per `#[test]`, so the
+        // racing writers are usually threads of a single process.
+        static WRITER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let writer = WRITER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let temporary = path.with_extension(format!("tmp{}.{writer}", std::process::id()));
         std::fs::write(&temporary, self.to_pem()?).map_err(key_file_error)?;
         restrict_key_file_permissions(&temporary);
 
@@ -669,7 +684,9 @@ impl TestSession {
             "iat": issued_at,
             "nbf": self.not_before.unwrap_or(issued_at),
             "exp": self.expires_at.unwrap_or_else(|| {
-                issued_at + i64::try_from(self.lifetime.as_secs()).unwrap_or(i64::MAX)
+                // Saturate rather than wrap: `with_lifetime(Duration::MAX)` is a
+                // plausible way to ask for "never expires".
+                issued_at.saturating_add(i64::try_from(self.lifetime.as_secs()).unwrap_or(i64::MAX))
             }),
         });
 
