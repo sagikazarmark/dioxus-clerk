@@ -69,19 +69,7 @@ impl JwtVerificationProfile {
         keyset: &KeySet,
         kid: &str,
     ) -> Result<RS256PublicKey, VerificationFailure> {
-        let jwk = keyset
-            .selector(&[Algorithm::Rs256])
-            .select(KeyMatcher::new(KeyOperation::Verify, Algorithm::Rs256).with_kid(kid))
-            .map_err(|error| {
-                tracing::debug!(error = ?error, "failed to select Clerk JWT verification key");
-                VerificationFailure::invalid()
-            })?
-            .clone();
-
-        jwk.try_into().map_err(|error| {
-            tracing::debug!(error = ?error, "failed to convert Clerk JWK into RS256 verifier");
-            VerificationFailure::invalid()
-        })
+        rs256_key_for_kid(keyset, kid)
     }
 
     pub(super) fn verify_claims(
@@ -142,6 +130,35 @@ impl JwtVerificationProfile {
             Err(VerificationFailure::invalid())
         }
     }
+}
+
+fn rs256_key_for_kid(keyset: &KeySet, kid: &str) -> Result<RS256PublicKey, VerificationFailure> {
+    let jwk = keyset
+        .selector(&[Algorithm::Rs256])
+        .select(KeyMatcher::new(KeyOperation::Verify, Algorithm::Rs256).with_kid(kid))
+        .map_err(|error| {
+            tracing::debug!(error = ?error, "failed to select Clerk JWT verification key");
+            VerificationFailure::invalid()
+        })?
+        .clone();
+
+    jwk.try_into().map_err(|error| {
+        tracing::debug!(error = ?error, "failed to convert Clerk JWK into RS256 verifier");
+        VerificationFailure::invalid()
+    })
+}
+
+/// Whether any key in `keyset` could actually verify a token.
+///
+/// Runs the real selection, because "has keys" is not the same question: a
+/// document of EC keys, or of RSA keys marked `"use": "enc"`, parses fine and
+/// then rejects every token. Selection is always by the `kid` in the token
+/// header, so a key without one is unreachable and does not count.
+pub(super) fn has_rs256_verification_key(keyset: &KeySet) -> bool {
+    keyset
+        .iter()
+        .filter_map(|key| key.kid())
+        .any(|kid| rs256_key_for_kid(keyset, kid).is_ok())
 }
 
 fn invalid_reason(error: &jwt_simple::Error) -> InvalidTokenReason {

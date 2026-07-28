@@ -50,20 +50,39 @@ impl From<VerificationFailure> for VerificationOutcome {
     }
 }
 
-/// Server-side JWT verifier with in-memory JWKS cache.
+/// Server-side JWT verifier.
 #[derive(Clone)]
 pub(crate) struct Verifier {
     inner: Arc<VerifierInner>,
 }
 
 struct VerifierInner {
+    keys: KeySource,
+    profile: JwtVerificationProfile,
+}
+
+/// Where the verifier gets its signing keys.
+enum KeySource {
+    /// Keys fetched from Clerk's JWKS endpoint and cached in memory. Boxed
+    /// because it carries an HTTP client and two locks, while the static
+    /// variant is a pointer.
+    Fetched(Box<FetchedKeys>),
+    /// A fixed keyset from
+    /// [`with_static_jwks`](ClerkAuthLayerConfig::with_static_jwks). There is
+    /// nothing to fetch, cache, or refresh, so verification here can never fail
+    /// as `Unavailable`.
+    Static(Arc<KeySet>),
+}
+
+/// Fetched-keys state: the HTTP client, the JWKS cache, and the refresh
+/// coordination that only the fetching path needs.
+struct FetchedKeys {
     secret_key: String,
     jwks_url: reqwest::Url,
     client: reqwest::Client,
-    profile: JwtVerificationProfile,
     cache: Mutex<JwksCache>,
     /// Cache TTL / backoff / max-stale knobs, fixed at construction so a
-    /// future config option extends [`Verifier::new`] instead of every
+    /// future config option extends [`FetchedKeys::new`] instead of every
     /// lookup call site.
     cache_policy: JwksCachePolicy,
     /// Serializes JWKS refreshes so a burst of requests on a cold or expired
@@ -73,6 +92,62 @@ struct VerifierInner {
 
 impl Verifier {
     pub(crate) fn new(config: ClerkAuthLayerConfig) -> Result<Self, ClerkError> {
+        let keys = match config.static_jwks.as_deref() {
+            Some(jwks_json) => KeySource::Static(Arc::new(parse_static_jwks(jwks_json)?)),
+            None => KeySource::Fetched(Box::new(FetchedKeys::new(&config)?)),
+        };
+
+        Ok(Self {
+            inner: Arc::new(VerifierInner {
+                keys,
+                profile: JwtVerificationProfile::new(
+                    config.authorized_parties,
+                    config.audiences,
+                    config.issuers,
+                    config.clock_skew,
+                    config.require_session_id,
+                ),
+            }),
+        })
+    }
+
+    async fn keyset_for_kid(&self, kid: &str) -> Result<Arc<KeySet>, VerificationFailure> {
+        match &self.inner.keys {
+            // A fixed keyset has nothing to refresh on an unknown kid, so the
+            // whole set is returned and `rs256_key_for_kid` reports the missing
+            // key as an invalid token — the same outcome the fetching path
+            // reaches after a refresh that still lacks the kid.
+            KeySource::Static(keyset) => Ok(Arc::clone(keyset)),
+            KeySource::Fetched(keys) => keys.keyset_for_kid(kid).await,
+        }
+    }
+}
+
+/// Parses a configured JWKS document, rejecting one that cannot verify a Clerk
+/// session token: it would verify nothing, and failing at construction points at
+/// the config instead of surfacing later as every token being invalid.
+fn parse_static_jwks(jwks_json: &str) -> Result<KeySet, ClerkError> {
+    let keyset: KeySet = serde_json::from_str(jwks_json).map_err(|error| {
+        ClerkError::InvalidConfig(format!("invalid static Clerk JWKS: {error}"))
+    })?;
+
+    if keyset.is_empty() {
+        return Err(ClerkError::InvalidConfig(
+            "static Clerk JWKS contains no keys".into(),
+        ));
+    }
+
+    if !jwt::has_rs256_verification_key(&keyset) {
+        return Err(ClerkError::InvalidConfig(
+            "static Clerk JWKS contains no RS256 signing key with a key id".into(),
+        ));
+    }
+
+    Ok(keyset)
+}
+
+impl FetchedKeys {
+    fn new(config: &ClerkAuthLayerConfig) -> Result<Self, ClerkError> {
         if config.secret_key.is_empty() {
             return Err(ClerkError::InvalidConfig(
                 "Clerk secret key must not be empty".into(),
@@ -94,21 +169,12 @@ impl Verifier {
         })?;
 
         Ok(Self {
-            inner: Arc::new(VerifierInner {
-                secret_key: config.secret_key,
-                jwks_url,
-                client,
-                profile: JwtVerificationProfile::new(
-                    config.authorized_parties,
-                    config.audiences,
-                    config.issuers,
-                    config.clock_skew,
-                    config.require_session_id,
-                ),
-                cache: Mutex::new(JwksCache::default()),
-                cache_policy: JwksCachePolicy::default(),
-                refresh_lock: futures_util::lock::Mutex::new(()),
-            }),
+            secret_key: config.secret_key.clone(),
+            jwks_url,
+            client,
+            cache: Mutex::new(JwksCache::default()),
+            cache_policy: JwksCachePolicy::default(),
+            refresh_lock: futures_util::lock::Mutex::new(()),
         })
     }
 
@@ -117,15 +183,14 @@ impl Verifier {
     /// mid-write, while treating poisoning as fatal would turn one panic into
     /// permanent 503s for every refresh-path request.
     fn lock_cache(&self) -> std::sync::MutexGuard<'_, JwksCache> {
-        self.inner
-            .cache
+        self.cache
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     fn cache_lookup(&self, kid: &str) -> JwksCacheLookup {
         self.lock_cache()
-            .lookup(kid, self.inner.cache_policy, SystemTime::now())
+            .lookup(kid, self.cache_policy, SystemTime::now())
     }
 
     async fn keyset_for_kid(&self, kid: &str) -> Result<Arc<KeySet>, VerificationFailure> {
@@ -138,7 +203,7 @@ impl Verifier {
     }
 
     async fn refresh_keyset_for_kid(&self, kid: &str) -> Result<Arc<KeySet>, VerificationFailure> {
-        let _refresh_guard = self.inner.refresh_lock.lock().await;
+        let _refresh_guard = self.refresh_lock.lock().await;
 
         // Re-check after acquiring the lock: a concurrent request may have
         // refreshed the cache (or recorded a fetch failure) while this one
@@ -161,7 +226,7 @@ impl Verifier {
                 let mut cache = self.lock_cache();
                 cache.record_failure();
                 if let Some(stale) =
-                    cache.stale_keyset_for_kid(kid, self.inner.cache_policy, SystemTime::now())
+                    cache.stale_keyset_for_kid(kid, self.cache_policy, SystemTime::now())
                 {
                     tracing::warn!(
                         "Clerk JWKS refresh failed; serving stale cached keyset until the next successful refresh"
@@ -208,10 +273,9 @@ impl Verifier {
 
     async fn fetch_and_parse_keyset(&self) -> Result<KeySet, VerificationFailure> {
         let response = self
-            .inner
             .client
-            .get(self.inner.jwks_url.clone())
-            .bearer_auth(&self.inner.secret_key)
+            .get(self.jwks_url.clone())
+            .bearer_auth(&self.secret_key)
             .send()
             .await
             .map_err(|error| {
@@ -225,7 +289,7 @@ impl Verifier {
         // `worker` (wasm) target, reqwest maps to the browser/Workers `fetch`,
         // which follows 3xx with no redirect-policy control: this post-fetch
         // check is the only place a cross-origin redirect can be caught there.
-        if response.url().origin() != self.inner.jwks_url.origin() {
+        if response.url().origin() != self.jwks_url.origin() {
             tracing::warn!(
                 "Clerk JWKS response came from an unexpected origin (redirect?); refusing to source signing keys from it"
             );
