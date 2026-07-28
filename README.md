@@ -54,6 +54,7 @@ server = ["dioxus-clerk/server"]
 | *(none)* | ✅ | Client components, hooks, guards, Clerk widgets, and SSR initial-state consumption. |
 | `server` | | Axum middleware, extractors, `#[server]` context readers (`current_auth`), and SSR initial-state helpers. Enable on the native server build only. |
 | `worker` | | `server` plus `Send`-wrapped middleware futures for single-threaded Cloudflare Workers. |
+| `testing` | | `TestClerk` / `TestIssuer` / `TestSession` for minting Clerk-shaped session tokens in your own tests. Enable under `[dev-dependencies]` only — see [Testing](#testing). |
 
 ### 60-second setup
 
@@ -477,6 +478,65 @@ async fn public_handler(auth: Option<ClerkAuth>) -> String {
     auth.map(|auth| auth.user_id).unwrap_or_else(|| "anonymous".into())
 }
 ```
+
+## Testing
+
+The `testing` feature lets your tests exercise the real `ClerkAuthLayer`
+verification path with no Clerk instance, no network, and no secrets in CI.
+
+```toml
+[dev-dependencies]
+dioxus-clerk = { version = "0.4", features = ["server", "testing"] }
+```
+
+Most tests are not *about* Clerk — you need a signed-in user so you can test
+what your app does. That is the whole API:
+
+```rust,ignore
+use dioxus_clerk::testing::TestClerk;
+
+let clerk = TestClerk::new()?;
+
+let app = my_app::router(clerk.layer()?);          // verifies this setup's tokens
+let cookie = clerk.cookie("user_2abc")?;           // send it with a request
+```
+
+When auth *is* the subject, `TestIssuer` and `TestSession` build the claims —
+including the ones verification should reject (`expired()`,
+`without_session_id()`, a mismatched `with_authorized_party`). Organization
+permissions go in as plain `org:<feature>:<permission>` strings and are encoded
+into Clerk's packed v2 `fea`/`per`/`fpm` claims for you.
+
+**See [docs/testing.md](docs/testing.md)** for the full guide: SSR tests that
+need no token at all, sharing a key across processes, Playwright setup with the
+`window.Clerk` fake that keeps a browser suite from ever fetching clerk-js, and
+when to reach for Clerk's own `@clerk/testing` instead.
+
+Two things worth knowing up front:
+
+- No environment variables are needed. If your app calls
+  `ClerkAuthLayerConfig::from_env()` internally, factor the router so tests can
+  pass a config in.
+- `with_static_jwks` (what `TestClerk` uses) is not test-only. It also pins
+  signing keys in production — but a fixed keyset does not rotate, so tokens
+  signed by a newly rotated Clerk key are rejected until you update it. Prefer
+  the fetched default.
+
+## Documentation
+
+| Where | What |
+| --- | --- |
+| [docs.rs](https://docs.rs/dioxus-clerk) | API reference plus the long-form guides, versioned with each release. |
+| [`docs/`](docs/) | Markdown sources for those guides — the same content, browsable on GitHub. |
+| This README | Setup, quickstarts, and recipes. |
+
+The guides live once, as Markdown in `docs/`, and are rendered into the API docs
+under `dioxus_clerk::guides`. Coding agents working in a project that depends on
+this crate will find them on docs.rs or in the vendored crate source; no setup
+needed.
+
+Contributors (and their agents) should start with [AGENTS.md](AGENTS.md) and
+[CONTEXT.md](CONTEXT.md).
 
 ## Development
 

@@ -28,6 +28,11 @@ server = [
 # Cloudflare Workers are single-threaded, but Axum still requires `Send`
 # futures. This feature opts into wrapping wasm middleware futures as `Send`.
 worker = ["dep:send_wrapper", "server"]
+# Test helpers that mint Clerk-shaped session tokens from a local key. Enable
+# under [dev-dependencies] only: it builds tokens a verifier will accept.
+# Deliberately independent of `server`, so a test harness that only needs to
+# mint tokens does not pull in axum and reqwest.
+testing = ["dep:ct-codecs", "dep:jwt-simple"]
 
 [dependencies]
 axum = { version = "0.8", default-features = false, features = ["json"], optional = true }
@@ -84,6 +89,7 @@ dioxus-html = { version = "0.7", default-features = false, features = ["serializ
 jsonwebtoken = { version = "10", features = ["rust_crypto"] }
 # Keep validation off transitive releases that require a newer Rust than this crate's MSRV.
 simple_asn1 = "=0.6.4"
+tempfile = "3"
 tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread", "net"] }
 # Keep validation off transitive releases that require a newer Rust than this crate's MSRV.
 wiremock = "=0.6.5"
@@ -91,7 +97,7 @@ wiremock = "=0.6.5"
 # docs.rs builds with the server feature and --cfg docsrs so the
 # feature-requirement badges (doc_cfg) render on feature-gated items.
 [package.metadata.docs.rs]
-features = ["server"]
+features = ["server", "testing"]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [package.metadata.release]

@@ -49,6 +49,7 @@
 //! | *(none)* | ✅ | Client components, hooks, guards, Clerk widgets, and SSR consumption. |
 //! | `server` | | Axum middleware, extractors, `#[server]` context readers, and SSR initial-state helpers. Enable on the native server build only. |
 //! | `worker` | | `server` plus `Send`-wrapped middleware futures for single-threaded Cloudflare Workers. |
+//! | `testing` | | Test helpers ([`testing::TestClerk`]) that mint Clerk-shaped session tokens locally. Enable under `[dev-dependencies]` only. |
 //!
 //! [Dioxus]: https://dioxuslabs.com
 
@@ -68,6 +69,10 @@ pub mod ssr;
 #[cfg(feature = "server")]
 #[cfg_attr(docsrs, doc(cfg(feature = "server")))]
 pub mod server;
+
+#[cfg(feature = "testing")]
+#[cfg_attr(docsrs, doc(cfg(feature = "testing")))]
+pub mod testing;
 
 // Curated crate-root re-exports. These lists are explicit (rather than glob
 // re-exporting the modules) so the stable surface is reviewable and a new
@@ -151,3 +156,17 @@ mod publishable_key;
 #[cfg(clerk_client)]
 mod ssr_document;
 mod startup;
+
+/// Long-form guides, rendered from the Markdown sources in the repository's
+/// `docs/` directory.
+///
+/// These are `#[cfg(doc)]`-only: they exist to put the guides on docs.rs and in
+/// local `cargo doc` output, versioned with the release they describe, so they
+/// are reachable without leaving the API documentation.
+#[cfg(doc)]
+pub mod guides {
+    /// Setting up an application's test suite against Clerk — offline token
+    /// minting, SSR tests, and Playwright configuration.
+    #[doc = include_str!("../docs/testing.md")]
+    pub mod testing {}
+}
