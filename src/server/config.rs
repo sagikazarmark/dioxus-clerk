@@ -58,6 +58,7 @@ pub struct ClerkAuthLayerConfig {
     pub(crate) secret_key: String,
     backend_api_base_url: String,
     allow_insecure_backend_api_base_url: bool,
+    pub(crate) static_jwks: Option<String>,
     pub(crate) authorized_parties: Vec<String>,
     pub(crate) audiences: Vec<String>,
     pub(crate) issuers: Vec<String>,
@@ -72,6 +73,7 @@ impl ClerkAuthLayerConfig {
             secret_key: secret_key.into(),
             backend_api_base_url: DEFAULT_BACKEND_API_BASE_URL.into(),
             allow_insecure_backend_api_base_url: false,
+            static_jwks: None,
             authorized_parties: vec![],
             audiences: vec![],
             issuers: vec![],
@@ -110,6 +112,26 @@ impl ClerkAuthLayerConfig {
         );
         self.backend_api_base_url = url;
         self.allow_insecure_backend_api_base_url = true;
+        self
+    }
+
+    /// Verifies against a fixed JWKS instead of fetching one from Clerk.
+    ///
+    /// `jwks_json` is a JWKS document (`{"keys": [...]}`). When set, the
+    /// Backend API base URL is never contacted: there is no HTTP client, no
+    /// cache, and no refresh, so the secret key is unused and may be empty.
+    ///
+    /// This is the offline path for tests — pair it with
+    /// [`TestIssuer`](crate::testing::TestIssuer) to verify locally minted
+    /// tokens without standing up a JWKS mock server at all.
+    ///
+    /// It is also usable in production to pin signing keys, but note that a
+    /// fixed keyset does not rotate: when Clerk rotates its signing keys,
+    /// every token signed by a new key is rejected until the configured JWKS
+    /// is updated and the process restarts. Prefer the fetched default unless
+    /// you have a specific reason to pin.
+    pub fn with_static_jwks(mut self, jwks_json: impl Into<String>) -> Self {
+        self.static_jwks = Some(jwks_json.into());
         self
     }
 
@@ -207,6 +229,7 @@ impl std::fmt::Debug for ClerkAuthLayerConfig {
                 "allow_insecure_backend_api_base_url",
                 &self.allow_insecure_backend_api_base_url,
             )
+            .field("static_jwks", &self.static_jwks.is_some())
             .field("authorized_parties", &self.authorized_parties)
             .field("audiences", &self.audiences)
             .field("issuers", &self.issuers)
