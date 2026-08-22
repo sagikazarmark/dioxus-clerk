@@ -34,7 +34,7 @@ worker = [
 dioxus-clerk = { path = ".." }
 
 axum = { version = "0.8", default-features = false, features = ["json"], optional = true }
-dioxus = { version = "0.7", default-features = false, features = [
+dioxus = { version = "0.7.10", default-features = false, features = [
     "asset",
     "document",
     "hooks",
@@ -44,13 +44,17 @@ dioxus = { version = "0.7", default-features = false, features = [
     "signals",
 ] }
 dioxus-code = { version = "0.1.2", optional = true }
-dioxus-server = { version = "0.7", optional = true }
+dioxus-server = { version = "0.7.10", optional = true }
 gloo-net = { version = "0.6", optional = true }
 serde_json = { version = "1", optional = true }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"], optional = true }
 tower-service = { version = "0.3", optional = true }
 worker = { version = "0.8", features = ["http", "axum"], optional = true }
 worker-macros = { version = "0.8", features = ["http"], optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# Keep the generated WASM ABI aligned with the version embedded in dx 0.7.10.
+wasm-bindgen = "=0.2.126"
 
 [profile.release]
 opt-level = "z"
