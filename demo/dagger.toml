@@ -18,4 +18,3 @@ source = "github.com/sagikazarmark/daggerverse-beta/dagger-gha"
 
 [modules.dagger-gha.settings]
 env = "ci"
-lock = '"PINNED"'

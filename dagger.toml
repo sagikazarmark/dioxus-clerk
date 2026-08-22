@@ -16,8 +16,5 @@ defaultBrowsers = '"CHROME"'
 [modules.dagger-gha]
 source = "github.com/sagikazarmark/daggerverse-beta/dagger-gha"
 
-[modules.dagger-gha.settings]
-lock = '"PINNED"'
-
 [modules.dang]
 source = "github.com/sagikazarmark/daggerverse-beta/dang"
