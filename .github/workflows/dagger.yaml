@@ -10,9 +10,8 @@ jobs:
             - name: Check
               uses: dagger/dagger-for-github@v8.4.1
               with:
-                args: --lock pinned
                 verb: check
-                version: v1.0.0-beta.7
+                version: v1.0.0-beta.10
 name: Dagger
 "on":
     pull_request: {}
