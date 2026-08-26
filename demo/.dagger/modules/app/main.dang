@@ -75,4 +75,11 @@ type App {
       .withDirectory("dist", client)
       .withDirectory("dist/worker", self.worker)
   }
+
+  """
+  Builds the Cloudflare Worker bundle.
+  """
+  workerBundleAsContainer(ws: Workspace!): Container! @check {
+    Dagger.container.withDirectory("", self.workerBundle(ws))
+  }
 }

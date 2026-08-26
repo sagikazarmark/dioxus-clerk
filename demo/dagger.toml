@@ -38,6 +38,13 @@ envFile = ".env"
 assets = "assets:as-container"
 worker = "worker-build:build-as-container"
 
+[modules.worker]
+source = "github.com/sagikazarmark/daggerverse-beta/worker"
+
+[modules.worker.settings]
+bundleAsContainer = "app:worker-bundle-as-container"
+config = "wrangler.toml"
+
 [modules.dagger-gha]
 source = "github.com/sagikazarmark/daggerverse-beta/dagger-gha"
 
