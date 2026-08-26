@@ -323,8 +323,8 @@ mod tests {
             b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
         let mut output = String::with_capacity(input.len().div_ceil(3) * 4);
-        let mut chunks = input.chunks_exact(3);
-        for chunk in &mut chunks {
+        let (chunks, remainder) = input.as_chunks::<3>();
+        for chunk in chunks {
             output.push(TABLE[(chunk[0] >> 2) as usize] as char);
             output
                 .push(TABLE[(((chunk[0] & 0b0000_0011) << 4) | (chunk[1] >> 4)) as usize] as char);
@@ -333,7 +333,7 @@ mod tests {
             output.push(TABLE[(chunk[2] & 0b0011_1111) as usize] as char);
         }
 
-        match chunks.remainder() {
+        match remainder {
             [first] => {
                 output.push(TABLE[(first >> 2) as usize] as char);
                 output.push(TABLE[((first & 0b0000_0011) << 4) as usize] as char);
