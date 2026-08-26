@@ -12,7 +12,8 @@ inputs:
     overlays:
       - default
   dagger:
-    url: github:dagger/nix
+    # https://github.com/dagger/nix/pull/40
+    url: github:dagger/nix/b35b2b5ab62ace3a3c1e779c497de1ad762a4aa1
     overlays:
       - default
 

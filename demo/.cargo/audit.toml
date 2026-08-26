@@ -1,0 +1,5 @@
+# rsa (RUSTSEC-2023-0071, Marvin timing sidechannel) has no fixed release.
+# The demo's server verifies Clerk signatures with public keys and performs no
+# private-key operations. Revisit when upstream publishes a fix.
+[advisories]
+ignore = ["RUSTSEC-2023-0071"]

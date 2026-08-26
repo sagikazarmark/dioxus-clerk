@@ -1,0 +1,6 @@
+# rsa (RUSTSEC-2023-0071, Marvin timing sidechannel) has no fixed release.
+# Server verification uses only public keys, while private-key operations are
+# limited to local test token minting. Neither exposes private-key timing to a
+# network attacker. Revisit when upstream publishes a fix.
+[advisories]
+ignore = ["RUSTSEC-2023-0071"]

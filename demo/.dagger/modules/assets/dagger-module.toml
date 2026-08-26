@@ -1,0 +1,8 @@
+name = "assets"
+engineVersion = "v1.0.0"
+runtime.source = "dang"
+include = ["!.devenv", "!.wrangler", "!build", "!dist", "!node_modules", "!target"]
+
+[[dependencies]]
+name = "node-environment"
+source = "github.com/sagikazarmark/daggerverse-beta/node-environment"

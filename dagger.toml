@@ -1,20 +1,20 @@
 [modules.rust]
 source = "github.com/sagikazarmark/daggerverse-beta/rust"
-check.skip = ["audit"]
 
 [modules.rust.settings]
-version = "1.97-slim-trixie"
+version = "1.98-slim-trixie"
 
 [modules.wasm-pack]
 source = "github.com/sagikazarmark/daggerverse-beta/wasm-pack"
-check.skip = ["wasm-pack:test"]
 
 [modules.wasm-pack.settings]
-rustVersion = "1.97-slim-trixie"
-defaultBrowsers = '"CHROME"'
+rustVersion = "1.98-slim-trixie"
+defaultBrowsers = "CHROME"
 
 [modules.dagger-gha]
 source = "github.com/sagikazarmark/daggerverse-beta/dagger-gha"
+
+settings.daggerCommit = "3e485b3ed23dd5a57417a23fe0a9f01ec7858231"
 
 [modules.dang]
 source = "github.com/sagikazarmark/daggerverse-beta/dang"
