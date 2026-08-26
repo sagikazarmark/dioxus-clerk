@@ -1,43 +1,36 @@
 type App {
   let dioxus: Dioxus!
 
-  let assets: Directory!
   let worker: Directory!
 
   new(
+    ws: Workspace!,
     rustContainer: Container!,
     envFile: File,
     assets: Container!,
     worker: Container!,
   ) {
-    self.dioxus = Dagger.dioxus(container: rustContainer, envFile: envFile)
+    ws = ws
+      .withNewFile(
+        ".gitignore",
+        ws.file(".gitignore").contents + "\n" + ["!/build/style.css"].join("\n"),
+      )
+      .withNewDirectory("build", assets.directory("build"))
 
-    self.assets = assets.directory("")
+    self.dioxus = Dagger.dioxus(ws: ws, container: rustContainer, envFile: envFile)
+
     self.worker = worker.directory("")
 
     self
   }
 
-  let withAssets(ws: Workspace!): Workspace! {
-    # DAGGER_TODO:
-    # generated assets are normally ignored by git, so adding them back causes
-    # them to be ignored next time workspace is called
-    ws
-      .withNewFile(
-        ".gitignore",
-        ws.file(".gitignore").contents + "\n" + ["!/build/style.css"].join("\n"),
-      )
-      .withNewDirectory("build", self.assets.directory("build"))
-  }
-
   """
   Build the demo application.
   """
-  build(ws: Workspace!): Directory! @check {
+  build: Directory! @check {
     self
       .dioxus
       .bundle(
-        self.withAssets(ws),
         fullstack: true,
         release: true,
         debugSymbols: false,
@@ -48,9 +41,8 @@ type App {
   """
   Serve the demo application.
   """
-  service(ws: Workspace!): Service! @up {
+  service: Service! @up {
     self.dioxus.serve(
-      self.withAssets(ws),
       fullstack: true,
       clientArgs: ["--features", "fullstack-web"],
     )
@@ -59,11 +51,10 @@ type App {
   """
   Builds the Cloudflare Worker bundle.
   """
-  workerBundle(ws: Workspace!): Directory! @check {
+  workerBundle: Directory! @check {
     let client = self
       .dioxus
       .bundle(
-        self.withAssets(ws),
         fullstack: false,
         release: true,
         debugSymbols: false,
@@ -79,7 +70,7 @@ type App {
   """
   Builds the Cloudflare Worker bundle.
   """
-  workerBundleAsContainer(ws: Workspace!): Container! @check {
-    Dagger.container.withDirectory("", self.workerBundle(ws))
+  workerBundleAsContainer: Container! @check {
+    Dagger.container.withDirectory("", self.workerBundle)
   }
 }
