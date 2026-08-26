@@ -10,8 +10,8 @@ jobs:
             - name: Check
               uses: dagger/dagger-for-github@v8.4.1
               with:
+                commit: 3e485b3ed23dd5a57417a23fe0a9f01ec7858231
                 verb: check
-                version: v1.0.0-beta.10
 name: Dagger
 "on":
     pull_request: {}

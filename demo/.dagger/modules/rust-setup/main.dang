@@ -1,0 +1,18 @@
+type RustSetup {
+  container: Container!
+
+  new(rustVersion: String!) {
+    # clang is needed to cross-compile the C sysroot pulled in
+    # by the `dioxus-code` snippet highlighter (arborium/tree-sitter) for the wasm32 target.
+    # The `cc` crate auto-selects clang for wasm32-unknown-unknown, so installing it is enough.
+    self.container = Dagger
+      .container
+      .from("rust:" + rustVersion)
+      .withMountedCache("/var/cache/apt/archives", Dagger.cacheVolume("debian-apt-archives"))
+      .withEnvVariable("DEBIAN_FRONTEND", "noninteractive")
+      .withExec(["apt-get", "update"])
+      .withExec(["apt-get", "install", "-y", "--no-install-recommends", "clang"])
+
+    self
+  }
+}

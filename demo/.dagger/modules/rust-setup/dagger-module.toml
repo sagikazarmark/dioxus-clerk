@@ -1,0 +1,4 @@
+name = "rust-setup"
+engineVersion = "v1.0.0"
+runtime.source = "dang"
+include = ["!.devenv", "!.wrangler", "!build", "!dist", "!node_modules", "!target"]

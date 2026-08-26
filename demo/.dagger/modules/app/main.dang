@@ -1,0 +1,78 @@
+type App {
+  let dioxus: Dioxus!
+
+  let assets: Directory!
+  let worker: Directory!
+
+  new(
+    rustContainer: Container!,
+    envFile: File,
+    assets: Container!,
+    worker: Container!,
+  ) {
+    self.dioxus = Dagger.dioxus(container: rustContainer, envFile: envFile)
+
+    self.assets = assets.directory("")
+    self.worker = worker.directory("")
+
+    self
+  }
+
+  let withAssets(ws: Workspace!): Workspace! {
+    # DAGGER_TODO:
+    # generated assets are normally ignored by git, so adding them back causes
+    # them to be ignored next time workspace is called
+    ws
+      .withNewFile(
+        ".gitignore",
+        ws.file(".gitignore").contents + "\n" + ["!/build/style.css"].join("\n"),
+      )
+      .withNewDirectory("build", self.assets.directory("build"))
+  }
+
+  """
+  Build the demo application.
+  """
+  build(ws: Workspace!): Directory! @check {
+    self
+      .dioxus
+      .bundle(
+        self.withAssets(ws),
+        fullstack: true,
+        release: true,
+        debugSymbols: false,
+        clientArgs: ["--features", "fullstack-web"],
+      )
+  }
+
+  """
+  Serve the demo application.
+  """
+  service(ws: Workspace!): Service! @up {
+    self.dioxus.serve(
+      self.withAssets(ws),
+      fullstack: true,
+      clientArgs: ["--features", "fullstack-web"],
+    )
+  }
+
+  """
+  Builds the Cloudflare Worker bundle.
+  """
+  workerBundle(ws: Workspace!): Directory! @check {
+    let client = self
+      .dioxus
+      .bundle(
+        self.withAssets(ws),
+        fullstack: false,
+        release: true,
+        debugSymbols: false,
+        platform: DioxusPlatform.WEB,
+      )
+
+    Dagger
+      .directory
+      .withDirectory("dist", client)
+      .withDirectory("dist/worker", self.worker)
+  }
+}

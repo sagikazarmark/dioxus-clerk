@@ -1,20 +1,46 @@
-[modules.demo]
-source = "."
-entrypoint = true
-
-[modules.demo.settings]
-rustVersion = "1.97-trixie"
-envFile = ".env"
-
-[env.prod.modules.demo.settings]
-envFile = ".env.prod"
+[env.prod]
+modules.worker-build.settings.envFile = ".env.prod"
+modules.app.settings.envFile = ".env.prod"
 
 # Clerk publishable key is necessary for build, but it doesn't have to be a real value
-[env.ci.modules.demo.settings]
-envFile = ".env.dist"
+[env.ci]
+modules.worker-build.settings.envFile = ".env.dist"
+modules.app.settings.envFile = ".env.dist"
+
+[modules.rust-setup]
+source = ".dagger/modules/rust-setup"
+
+settings.rustVersion = "1.98-trixie"
+
+[modules.rust]
+source = "github.com/sagikazarmark/daggerverse-beta/rust"
+
+[modules.rust.settings]
+container = "rust-setup:container"
+
+[modules.worker-build]
+source = "github.com/sagikazarmark/daggerverse-beta/worker-build"
+
+[modules.worker-build.settings]
+container = "rust-setup:container"
+envFile = ".env"
+args = ["--no-default-features", "--features", "worker"]
+
+[modules.assets]
+source = "./.dagger/modules/assets"
+
+[modules.app]
+source = "./.dagger/modules/app"
+
+[modules.app.settings]
+rustContainer = "rust-setup:container"
+envFile = ".env"
+assets = "assets:as-container"
+worker = "worker-build:build-as-container"
 
 [modules.dagger-gha]
 source = "github.com/sagikazarmark/daggerverse-beta/dagger-gha"
 
 [modules.dagger-gha.settings]
 env = "ci"
+daggerCommit = "3e485b3ed23dd5a57417a23fe0a9f01ec7858231"

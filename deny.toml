@@ -4,10 +4,10 @@ all-features = true
 [advisories]
 ignore = [
   # rsa (RUSTSEC-2023-0071, Marvin timing sidechannel) is pulled transitively
-  # through the JWT verification stack. No fixed upgrade is available; server
-  # verification only reads Clerk-signed RS256 tokens, not attacker-chosen
-  # ciphertext. Revisit when upstream releases a fix.
-  { id = "RUSTSEC-2023-0071", reason = "No fixed upgrade available; rsa is transitive via the jwt-simple verification stack." },
+  # through the JWT stack. No fixed upgrade is available; server verification
+  # uses public keys, and private-key operations are limited to local test token
+  # minting. Revisit when upstream releases a fix.
+  { id = "RUSTSEC-2023-0071", reason = "No fixed upgrade; private-key use is limited to local test token minting." },
 ]
 
 [licenses]
