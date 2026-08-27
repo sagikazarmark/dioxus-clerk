@@ -1,4 +1,0 @@
-[["version","2"]]
-["","container.from",["docker.io/library/rust:1.98-slim-trixie","linux/arm64"],"sha256:fb4b2f1dc68c06f46618948b09d0ade147e6d2b11a6581e599b0c808d5b8a167"]
-["","git.ref",["https://github.com/rustsec/advisory-db.git","HEAD"],{"ref":"refs/heads/main","sha":"a7bfe16948bf6f3ee25bdee4822209f87da21b80"}]
-["","git.ref",["https://github.com/sagikazarmark/daggerverse-beta","HEAD"],{"ref":"refs/heads/main","sha":"e91d589bc8be066b45898f6c6f7fe638e771142c"}]

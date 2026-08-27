@@ -50,4 +50,3 @@ source = "github.com/sagikazarmark/daggerverse-beta/dagger-gha"
 
 [modules.dagger-gha.settings]
 env = "ci"
-daggerCommit = "3e485b3ed23dd5a57417a23fe0a9f01ec7858231"
