@@ -1,76 +1,17 @@
 type App {
-  let dioxus: Dioxus!
-
-  let worker: Directory!
+  workerBundle: Directory!
+  workerBundleAsContainer: Container!
 
   new(
-    ws: Workspace!,
-    rustContainer: Container!,
-    envFile: File,
-    assets: Container!,
+    client: Container!,
     worker: Container!,
   ) {
-    ws = ws
-      .withNewFile(
-        ".gitignore",
-        ws.file(".gitignore").contents + "\n" + ["!/build/style.css"].join("\n"),
-      )
-      .withNewDirectory("build", assets.directory("build"))
-
-    self.dioxus = Dagger.dioxus(ws: ws, container: rustContainer, envFile: envFile)
-
-    self.worker = worker.directory("")
-
-    self
-  }
-
-  """
-  Build the demo application.
-  """
-  build: Directory! @check {
-    self
-      .dioxus
-      .bundle(
-        fullstack: true,
-        release: true,
-        debugSymbols: false,
-        clientArgs: ["--features", "fullstack-web"],
-      )
-  }
-
-  """
-  Serve the demo application.
-  """
-  service: Service! @up {
-    self.dioxus.serve(
-      fullstack: true,
-      clientArgs: ["--features", "fullstack-web"],
-    )
-  }
-
-  """
-  Builds the Cloudflare Worker bundle.
-  """
-  workerBundle: Directory! @check {
-    let client = self
-      .dioxus
-      .bundle(
-        fullstack: false,
-        release: true,
-        debugSymbols: false,
-        platform: DioxusPlatform.WEB,
-      )
-
-    Dagger
+    self.workerBundle = Dagger
       .directory
-      .withDirectory("dist", client)
-      .withDirectory("dist/worker", self.worker)
-  }
+      .withDirectory("dist", client.directory(""))
+      .withDirectory("dist/worker", worker.directory(""))
+    self.workerBundleAsContainer = Dagger.container.withDirectory("", self.workerBundle)
 
-  """
-  Builds the Cloudflare Worker bundle.
-  """
-  workerBundleAsContainer: Container! @check {
-    Dagger.container.withDirectory("", self.workerBundle)
+    self
   }
 }
