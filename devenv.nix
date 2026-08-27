@@ -5,9 +5,7 @@
   # dotenv.enable = true;
 
   dagger.enable = true;
-  # https://github.com/dagger/dagger/pull/13933
-  env.DAGGER_X_RELEASE = "3e485b3ed23dd5a57417a23fe0a9f01ec7858231";
-  # env.DAGGER_X_RELEASE = "v1.0.0-beta.10";
+  env.DAGGER_X_RELEASE = "v1.0.0-beta.11";
 
   # Required by arborium
   env.CC_wasm32_unknown_unknown = "${pkgs.llvmPackages.clang-unwrapped}/bin/clang";

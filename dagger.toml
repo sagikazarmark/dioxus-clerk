@@ -14,7 +14,5 @@ defaultBrowsers = "CHROME"
 [modules.dagger-gha]
 source = "github.com/sagikazarmark/daggerverse-beta/dagger-gha"
 
-settings.daggerCommit = "3e485b3ed23dd5a57417a23fe0a9f01ec7858231"
-
 [modules.dang]
 source = "github.com/sagikazarmark/daggerverse-beta/dang"
