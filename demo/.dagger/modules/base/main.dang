@@ -1,4 +1,4 @@
-type RustSetup {
+type Base {
   container: Container!
 
   new(rustVersion: String!) {
@@ -12,6 +12,7 @@ type RustSetup {
       .withEnvVariable("DEBIAN_FRONTEND", "noninteractive")
       .withExec(["apt-get", "update"])
       .withExec(["apt-get", "install", "-y", "--no-install-recommends", "clang"])
+      .{ Dagger.nodeSetup.apply(_) } # necessary for Tailwind CSS and DaisyUI
 
     self
   }
