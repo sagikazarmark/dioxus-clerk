@@ -1,58 +1,22 @@
+[modules.demo]
+source = "."
+
+[modules.demo.settings]
+rustVersion = "1.98-trixie"
+envFile = ".env"
+
 [env.prod]
-modules.dioxus.settings.envFile = ".env.prod"
-modules.dioxus.settings.fullstack = false
-modules.worker-build.settings.envFile = ".env.prod"
+modules.demo.settings.envFile = ".env.prod"
 
 # Clerk publishable key is necessary for build, but it doesn't have to be a real value
 [env.ci]
-modules.dioxus.settings.envFile = ".env.dist"
-modules.worker-build.settings.envFile = ".env.dist"
-
-[modules.app]
-source = ".dagger/modules/app"
-
-[modules.app.settings]
-client = "dioxus:bundle-as-container"
-worker = "worker-build:build-as-container"
-
-[modules.base]
-source = ".dagger/modules/base"
-
-settings.rustVersion = "1.98-trixie"
-
-[modules.rust]
-source = "github.com/sagikazarmark/daggerverse-beta/rust"
-check.skip = ["rust:build"] # dioxus:bundle and worker-build:build cover this
-
-[modules.rust.settings]
-container = "base:container"
-
-[modules.worker-build]
-source = "github.com/sagikazarmark/daggerverse-beta/worker-build"
-
-[modules.worker-build.settings]
-container = "base:container"
-envFile = ".env"
-args = ["--no-default-features", "--features", "worker"]
-
-[modules.dioxus]
-source = "github.com/sagikazarmark/daggerverse-beta/dioxus"
-
-[modules.dioxus.settings]
-container = "base:container"
-envFile = ".env"
-fullstack = true
-release = true
-debugSymbols = false
-preBuildExec = [
-  ["npm", "install"],
-]
+modules.demo.settings.envFile = ".env.dist"
 
 [modules.worker]
 source = "github.com/sagikazarmark/daggerverse-beta/worker"
 
 [modules.worker.settings]
-bundleAsContainer = "app:worker-bundle-as-container"
+bundleAsContainer = "demo:worker-bundle-as-container"
 config = "wrangler.toml"
 
 [modules.dagger-gha]

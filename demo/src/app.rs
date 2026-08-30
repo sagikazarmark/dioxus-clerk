@@ -6,7 +6,7 @@ use dioxus_clerk::*;
 use crate::components::{DemoFooter, DemoHeader, Sidebar, SidebarNavLink, SidebarNavSection};
 use crate::pages::*;
 
-const STYLE: Asset = asset!("assets/tailwind.css");
+const STYLE: Asset = asset!("assets/style.css");
 
 /// Every page hangs off the one `ClerkLayout`, so there is a single
 /// `ClerkProvider` for the whole app. The two `:..segments` routes let Clerk's
