@@ -96,8 +96,4 @@ type Demo {
       .withDirectory("dist", client)
       .withDirectory("dist/worker", server)
   }
-
-  workerBundleAsContainer: Container! {
-    Dagger.container.withDirectory("", self.workerBundle)
-  }
 }
