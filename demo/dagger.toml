@@ -1,5 +1,6 @@
 [modules.demo]
 source = "."
+entrypoint = true
 
 [modules.demo.settings]
 rustVersion = "1.98-trixie"
@@ -16,7 +17,7 @@ modules.demo.settings.envFile = ".env.dist"
 source = "github.com/sagikazarmark/daggerverse-beta/worker"
 
 [modules.worker.settings]
-bundleAsContainer = "demo:worker-bundle-as-container"
+bundle = "demo:worker-bundle"
 config = "wrangler.toml"
 
 [modules.dagger-gha]

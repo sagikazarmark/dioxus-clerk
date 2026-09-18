@@ -12,7 +12,7 @@ jobs:
               with:
                 args: --env ci
                 verb: check
-                version: v1.0.0-beta.11
+                version: v1.0.0-beta.14
                 workdir: demo
 name: Dagger (demo)
 "on":
