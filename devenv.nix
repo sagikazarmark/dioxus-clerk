@@ -3,8 +3,12 @@
 {
   dotenv.enable = true;
 
-  dagger.enable = true;
-  env.DAGGER_X_RELEASE = "v1.0.0-beta.14";
+  dagger = {
+    enable = true;
+    version = "v1.0.0-beta.20";
+
+    dang.enable = true;
+  };
 
   # Required by arborium
   env.CC_wasm32_unknown_unknown = "${pkgs.llvmPackages.clang-unwrapped}/bin/clang";
@@ -14,16 +18,17 @@
 
     cargo-audit
     cargo-deny
-    cargo-dist
     cargo-hack
     cargo-nextest
     cargo-release
     cargo-watch
 
-    dioxus-cli
     wasm-pack
-    wasm-bindgen-cli_0_2_126
   ];
+
+  dioxus = {
+    enable = true;
+  };
 
   languages = {
     rust = {
@@ -31,6 +36,7 @@
       channel = "stable";
       targets = [ "wasm32-unknown-unknown" ];
     };
+
     javascript = {
       enable = true;
       npm.enable = true;
