@@ -5,7 +5,7 @@
 
   dagger = {
     enable = true;
-    version = "v1.0.0-beta.19";
+    version = "v1.0.0-beta.20";
 
     dang.enable = true;
   };
