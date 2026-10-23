@@ -7,3 +7,5 @@
 ["","git-latest",["github.com/sagikazarmark/daggerverse-beta",["tagPrefix","worker"]],"refs/heads/main"]
 ["","git-latest",["github.com/sagikazarmark/daggerverse-beta",["tagPrefix","worker-build"]],"refs/heads/main"]
 ["","git-sha",["github.com/sagikazarmark/daggerverse-beta","refs/heads/main"],"f6a0cf2247f996774851e83874f0ee11725c0ee5"]
+["","oci-sha",["docker.io/library/node:latest"],"sha256:a98e6fda54fdbb22d4238054cca9a2a113bcd1191c09193a535aae22f400aa8e"]
+["","oci-sha",["docker.io/library/rust:1.98-trixie"],"sha256:a8a5f0a1e5fe7dfe1d352591e4a1c7dd2c08fd70475cae872cf3458ba0df0546"]
