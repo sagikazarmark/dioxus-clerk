@@ -23,11 +23,20 @@ server = [
     "dep:reqwest",
     "dep:tower",
     "dep:tracing",
+    "dep:url",
     "dep:web-time",
 ]
 # Cloudflare Workers are single-threaded, but Axum still requires `Send`
-# futures. This feature opts into wrapping wasm middleware futures as `Send`.
-worker = ["dep:send_wrapper", "server"]
+# futures. This feature opts into wrapping wasm middleware futures as `Send`,
+# and fetches the JWKS through the Workers `fetch` API (tower-worker-fetch)
+# instead of reqwest, which has no redirect or timeout control on wasm.
+worker = [
+    "dep:http-body-util",
+    "dep:send_wrapper",
+    "dep:tower-worker-fetch",
+    "jwk-simple/tower",
+    "server",
+]
 # Test helpers that mint Clerk-shaped session tokens from a local key. Enable
 # under [dev-dependencies] only: it builds tokens a verifier will accept.
 # Deliberately independent of `server`, so a test harness that only needs to
@@ -41,7 +50,7 @@ ct-codecs = { version = "1", optional = true }
 dioxus = { version = "0.7.10", default-features = false, features = ["html", "hooks", "macro", "mounted", "signals"] }
 dioxus-fullstack-core = { version = "0.7.10", optional = true }
 futures-util = { version = "0.3", default-features = false, features = ["std"], optional = true }
-jwk-simple = { version = "0.6.0", default-features = false, features = ["jwt-simple"], optional = true }
+jwk-simple = { version = "0.6.0", default-features = false, features = ["http", "jwt-simple"], optional = true }
 jwt-simple = { version = "0.15.0", default-features = false, features = ["pure-rust"], optional = true }
 send_wrapper = { version = "0.6", features = ["futures"], optional = true }
 serde = { version = "1", features = ["derive"] }
@@ -49,14 +58,16 @@ serde_json = "1"
 thiserror = "2"
 tower = { version = "0.5", features = ["util"], optional = true }
 tracing = { version = "0.1", optional = true }
+url = { version = "2", optional = true }
 web-time = { version = "1", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 futures-util = { version = "0.3", default-features = false }
 gloo-timers = { version = "0.4", features = ["futures"] }
+http-body-util = { version = "0.1", optional = true }
 js-sys = "0.3"
-reqwest = { version = "0.13", default-features = false, features = ["json"], optional = true }
 serde-wasm-bindgen = "0.6"
+tower-worker-fetch = { version = "0.2", optional = true }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 web-sys = { version = "0.3", features = [
@@ -70,7 +81,8 @@ web-sys = { version = "0.3", features = [
 ] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"], optional = true }
+jwk-simple = { version = "0.6.0", default-features = false, features = ["reqwest"], optional = true }
+reqwest = { version = "0.13", default-features = false, features = ["rustls"], optional = true }
 
 [dev-dependencies]
 futures-util = "0.3"

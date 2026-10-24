@@ -204,9 +204,9 @@ impl ClerkAuthLayerConfig {
         self
     }
 
-    pub(crate) fn jwks_url(&self) -> Result<reqwest::Url, ClerkError> {
+    pub(crate) fn jwks_url(&self) -> Result<url::Url, ClerkError> {
         let jwks_url = format!("{}/jwks", self.backend_api_base_url.trim_end_matches('/'));
-        let url = reqwest::Url::parse(&jwks_url).map_err(|error| {
+        let url = url::Url::parse(&jwks_url).map_err(|error| {
             ClerkError::InvalidConfig(format!("invalid Clerk Backend API base URL: {error}"))
         })?;
 

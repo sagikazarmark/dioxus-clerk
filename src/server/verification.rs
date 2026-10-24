@@ -4,12 +4,13 @@
 //! by the tower layer, server-function context reader, and SSR initial state path.
 
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 
 use crate::core::{ClerkAuth, ClerkError, InvalidTokenReason, VerificationOutcome};
-use axum::body::Body;
-use axum::http::{Request, Response, StatusCode};
+use axum::body::{Body, Bytes};
+use axum::http::header::{AUTHORIZATION, USER_AGENT};
+use axum::http::{HeaderValue, Method, Request, Response, StatusCode, Uri};
 use jwk_simple::KeySet;
+use jwk_simple::jwks::{HttpTransport, TransportErrorKind};
 use web_time::SystemTime;
 
 use self::credentials::RequestCredentials;
@@ -21,13 +22,15 @@ use super::config::ClerkAuthLayerConfig;
 mod credentials;
 mod jwks;
 mod jwt;
+mod transport;
 
-const JWKS_FETCH_TIMEOUT: Duration = Duration::from_secs(30);
 /// Upper bound on a JWKS response body. Real Clerk keysets are a few KiB;
 /// anything larger indicates a misconfigured endpoint and is rejected before
-/// parsing (via Content-Length up front when present, and via the buffered
-/// length otherwise; buffering stays bounded by the fetch timeout).
-const JWKS_MAX_RESPONSE_BYTES: u64 = 1024 * 1024;
+/// parsing: the transport refuses it up front when `Content-Length` says so,
+/// and stops reading at the limit otherwise, so buffering stays bounded.
+const JWKS_MAX_RESPONSE_BYTES: usize = 1024 * 1024;
+
+const JWKS_USER_AGENT: &str = concat!("dioxus-clerk/", env!("CARGO_PKG_VERSION"));
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum VerificationFailure {
@@ -64,8 +67,8 @@ struct VerifierInner {
 /// Where the verifier gets its signing keys.
 enum KeySource {
     /// Keys fetched from Clerk's JWKS endpoint and cached in memory. Boxed
-    /// because it carries an HTTP client and two locks, while the static
-    /// variant is a pointer.
+    /// because it carries an HTTP transport, the prepared request, and two
+    /// locks, while the static variant is a pointer.
     Fetched(Box<FetchedKeys>),
     /// A fixed keyset from
     /// [`with_static_jwks`](ClerkAuthLayerConfig::with_static_jwks). There is
@@ -74,12 +77,15 @@ enum KeySource {
     Static(Arc<KeySet>),
 }
 
-/// Fetched-keys state: the HTTP client, the JWKS cache, and the refresh
+/// Fetched-keys state: the HTTP transport, the JWKS cache, and the refresh
 /// coordination that only the fetching path needs.
 struct FetchedKeys {
-    secret_key: String,
-    jwks_url: reqwest::Url,
-    client: reqwest::Client,
+    jwks_uri: Uri,
+    /// `Bearer <secret key>`, validated once at construction: Clerk's
+    /// `/v1/jwks` requires the secret key, and a key that cannot be sent as a
+    /// header is a configuration error, not an outage to retry.
+    authorization: HeaderValue,
+    transport: Arc<dyn HttpTransport>,
     cache: Mutex<JwksCache>,
     /// Cache TTL / backoff / max-stale knobs, fixed at construction so a
     /// future config option extends [`FetchedKeys::new`] instead of every
@@ -154,24 +160,22 @@ impl FetchedKeys {
             ));
         }
         let jwks_url = config.jwks_url()?;
-        let builder = reqwest::Client::builder()
-            .user_agent(concat!("dioxus-clerk/", env!("CARGO_PKG_VERSION")));
-        // The signing keys are the entire trust root: never follow a redirect
-        // (compromised CDN, open redirect, or an `https`→`http` downgrade) that
-        // would source them from another origin. HTTPS is already enforced on
-        // the configured base URL, but a redirect target is not re-checked.
-        #[cfg(not(target_arch = "wasm32"))]
-        let builder = builder
-            .timeout(JWKS_FETCH_TIMEOUT)
-            .redirect(reqwest::redirect::Policy::none());
-        let client = builder.build().map_err(|error| {
-            ClerkError::InvalidConfig(format!("failed to build Clerk JWKS HTTP client: {error}"))
+        let jwks_uri = Uri::try_from(jwks_url.as_str()).map_err(|error| {
+            ClerkError::InvalidConfig(format!("invalid Clerk Backend API base URL: {error}"))
         })?;
+        let mut authorization = HeaderValue::from_str(&format!("Bearer {}", config.secret_key))
+            .map_err(|_| {
+                ClerkError::InvalidConfig(
+                    "Clerk secret key contains characters that cannot be sent in an HTTP header"
+                        .into(),
+                )
+            })?;
+        authorization.set_sensitive(true);
 
         Ok(Self {
-            secret_key: config.secret_key.clone(),
-            jwks_url,
-            client,
+            jwks_uri,
+            authorization,
+            transport: transport::default_transport()?,
             cache: Mutex::new(JwksCache::default()),
             cache_policy: JwksCachePolicy::default(),
             refresh_lock: futures_util::lock::Mutex::new(()),
@@ -246,57 +250,44 @@ impl FetchedKeys {
         }
     }
 
-    async fn fetch_keyset(&self) -> Result<KeySet, VerificationFailure> {
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            // The reqwest client timeout bounds the whole fetch on native.
-            self.fetch_and_parse_keyset().await
-        }
-        #[cfg(target_arch = "wasm32")]
-        {
-            // reqwest has no client timeout on wasm; race the fetch against a
-            // JS timer so a hung upstream cannot hold the refresh lock forever.
-            use futures_util::future::{Either, select};
-            let fetch = std::pin::pin!(self.fetch_and_parse_keyset());
-            let timeout = std::pin::pin!(gloo_timers::future::TimeoutFuture::new(
-                JWKS_FETCH_TIMEOUT.as_millis() as u32
-            ));
-            match select(fetch, timeout).await {
-                Either::Left((result, _)) => result,
-                Either::Right(((), _)) => {
-                    tracing::warn!("Clerk JWKS fetch timed out");
-                    Err(VerificationFailure::Unavailable)
-                }
-            }
-        }
+    fn jwks_request(&self) -> Request<Bytes> {
+        let mut request = Request::new(Bytes::new());
+        *request.method_mut() = Method::GET;
+        *request.uri_mut() = self.jwks_uri.clone();
+        let headers = request.headers_mut();
+        headers.insert(AUTHORIZATION, self.authorization.clone());
+        headers.insert(USER_AGENT, HeaderValue::from_static(JWKS_USER_AGENT));
+        request
     }
 
-    async fn fetch_and_parse_keyset(&self) -> Result<KeySet, VerificationFailure> {
+    async fn fetch_keyset(&self) -> Result<KeySet, VerificationFailure> {
         let response = self
-            .client
-            .get(self.jwks_url.clone())
-            .bearer_auth(&self.secret_key)
-            .send()
+            .transport
+            .send(self.jwks_request(), JWKS_MAX_RESPONSE_BYTES)
             .await
             .map_err(|error| {
-                tracing::warn!(error = ?error, "failed to fetch Clerk JWKS");
+                match error.kind() {
+                    TransportErrorKind::Timeout => tracing::warn!("Clerk JWKS fetch timed out"),
+                    TransportErrorKind::TooLarge => {
+                        tracing::warn!("Clerk JWKS response exceeds the size limit")
+                    }
+                    _ => tracing::warn!(error = %error, "failed to fetch Clerk JWKS"),
+                }
                 VerificationFailure::Unavailable
             })?;
 
-        // The signing keys are the entire trust root: reject a response sourced
-        // from another origin. On native, redirects are already refused
-        // (`Policy::none()`), so this only re-confirms the origin. On the
-        // `worker` (wasm) target, reqwest maps to the browser/Workers `fetch`,
-        // which follows 3xx with no redirect-policy control: this post-fetch
-        // check is the only place a cross-origin redirect can be caught there.
-        if response.url().origin() != self.jwks_url.origin() {
+        let status = response.status();
+        // The transport never follows redirects (see `transport`), so a 3xx
+        // here is the endpoint trying to source the signing keys from
+        // somewhere else. It fails closed like any other non-success status;
+        // it is only named so the log points at the cause.
+        if status.is_redirection() {
             tracing::warn!(
-                "Clerk JWKS response came from an unexpected origin (redirect?); refusing to source signing keys from it"
+                status = %status,
+                "Clerk JWKS endpoint redirected; refusing to source signing keys from another location"
             );
             return Err(VerificationFailure::Unavailable);
         }
-
-        let status = response.status();
         // A 401/403 from `/jwks` almost always means a wrong or revoked
         // CLERK_SECRET_KEY, not a Clerk outage. It still fails closed
         // (`Unavailable`), but say so distinctly so an operator can tell a
@@ -313,25 +304,7 @@ impl FetchedKeys {
             return Err(VerificationFailure::Unavailable);
         }
 
-        if response
-            .content_length()
-            .is_some_and(|length| length > JWKS_MAX_RESPONSE_BYTES)
-        {
-            tracing::warn!("Clerk JWKS response exceeds the size limit");
-            return Err(VerificationFailure::Unavailable);
-        }
-
-        let bytes = response.bytes().await.map_err(|error| {
-            tracing::warn!(error = ?error, "failed to read Clerk JWKS response body");
-            VerificationFailure::Unavailable
-        })?;
-
-        if bytes.len() as u64 > JWKS_MAX_RESPONSE_BYTES {
-            tracing::warn!("Clerk JWKS response exceeds the size limit");
-            return Err(VerificationFailure::Unavailable);
-        }
-
-        serde_json::from_slice::<KeySet>(&bytes).map_err(|error| {
+        serde_json::from_slice::<KeySet>(response.body()).map_err(|error| {
             tracing::warn!(error = ?error, "failed to parse Clerk JWKS response");
             VerificationFailure::Unavailable
         })

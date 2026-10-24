@@ -830,17 +830,50 @@ async fn unknown_kid_does_not_refetch_before_rate_limit() {
 #[tokio::test]
 async fn jwks_redirect_response_fails_closed_without_following() {
     // The signing keys are the entire trust root: a redirecting `/jwks` must
-    // never be followed to another origin. On native, redirects are refused
-    // outright, so a 3xx fails closed as unavailable rather than sourcing keys
-    // from the redirect target.
+    // never be followed to another origin. The redirect target serves a valid
+    // keyset on purpose: following it would verify the token and the test
+    // would see 200, so a 503 plus an untouched target proves the redirect was
+    // refused rather than merely unlucky.
+    let (_priv_pem, jwks_json) = test_keys();
     let token = signed_test_token();
+    let target = start_jwks_mock(&jwks_json).await;
     let server = wiremock::MockServer::start().await;
     wiremock::Mock::given(wiremock::matchers::method("GET"))
         .and(wiremock::matchers::path("/v1/jwks"))
         .respond_with(
             wiremock::ResponseTemplate::new(302)
-                .insert_header("location", "https://evil.example/jwks"),
+                .insert_header("location", format!("{}/v1/jwks", target.uri())),
         )
+        .mount(&server)
+        .await;
+    let app = Router::new()
+        .route("/", get(|| async { "ok" }))
+        .layer(layer_with_jwks_base_url(format!("{}/v1", server.uri())));
+
+    let response = app
+        .oneshot(request_with_auth(Some(&format!("Bearer {token}"))))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+    assert_eq!(server.received_requests().await.unwrap().len(), 1);
+    assert_eq!(target.received_requests().await.unwrap().len(), 0);
+}
+
+#[tokio::test]
+async fn jwks_oversized_response_fails_closed_with_503() {
+    // A real Clerk keyset is a few KiB; a body past the cap is a misconfigured
+    // or hostile endpoint and must be refused before it is buffered or parsed.
+    // The padded body is still a valid keyset (leading whitespace is legal
+    // JSON), so without the cap the token would verify and this would be 200.
+    let (_priv_pem, jwks_json) = test_keys();
+    let token = signed_test_token();
+    let mut body = vec![b' '; 1024 * 1024 + 1];
+    body.extend_from_slice(jwks_json.as_bytes());
+    let server = wiremock::MockServer::start().await;
+    wiremock::Mock::given(wiremock::matchers::method("GET"))
+        .and(wiremock::matchers::path("/v1/jwks"))
+        .respond_with(wiremock::ResponseTemplate::new(200).set_body_bytes(body))
         .mount(&server)
         .await;
     let app = Router::new()
