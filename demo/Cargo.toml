@@ -53,8 +53,10 @@ worker = { version = "0.8", features = ["http", "axum"], optional = true }
 worker-macros = { version = "0.8", features = ["http"], optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-# Keep the generated WASM ABI aligned with the version embedded in dx 0.7.10.
-wasm-bindgen = "=0.2.126"
+# dx and worker-build install the wasm-bindgen CLI at the version in this
+# lockfile, while the devenv provides it at the root Cargo.lock's version, so
+# the two must agree: keep this pin equal to `wasm-bindgen` in ../Cargo.lock.
+wasm-bindgen = "=0.2.129"
 
 [profile.release]
 opt-level = "z"
