@@ -53,7 +53,7 @@ server = ["dioxus-clerk/server"]
 | --- | --- | --- |
 | *(none)* | ✅ | Client components, hooks, guards, Clerk widgets, and SSR initial-state consumption. |
 | `server` | | Axum middleware, extractors, `#[server]` context readers (`current_auth`), and SSR initial-state helpers. Enable on the native server build only. |
-| `worker` | | `server` plus `Send`-wrapped middleware futures for single-threaded Cloudflare Workers. |
+| `worker` | | `server` on Cloudflare Workers: fetches the JWKS through the Workers `fetch` API (via `tower-worker-fetch`) and relies on the single-threaded runtime for `Send` middleware futures. |
 | `testing` | | `TestClerk` / `TestIssuer` / `TestSession` for minting Clerk-shaped session tokens in your own tests. Enable under `[dev-dependencies]` only — see [Testing](#testing). |
 
 ### 60-second setup

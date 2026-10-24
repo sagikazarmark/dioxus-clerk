@@ -22,39 +22,28 @@ use axum::body::Body;
 use axum::http::{Request, Response};
 use tower::{Layer, Service};
 
-#[cfg(not(target_arch = "wasm32"))]
+// The service future is `Send` wherever it can run: native, and Workers under
+// the `worker` feature, where the JWKS transport's futures are `Send` on the
+// single-threaded runtime's own terms (see `verification::transport`). Browser
+// wasm compiles `server` only so features stay additive; nothing serves
+// requests there, so it is the one target that keeps the bound off.
+#[cfg(any(not(target_arch = "wasm32"), feature = "worker"))]
 trait MaybeSend: Send {}
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(any(not(target_arch = "wasm32"), feature = "worker"))]
 impl<T: Send + ?Sized> MaybeSend for T {}
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(target_arch = "wasm32", not(feature = "worker")))]
 trait MaybeSend {}
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(target_arch = "wasm32", not(feature = "worker")))]
 impl<T: ?Sized> MaybeSend for T {}
 
-#[cfg(not(target_arch = "wasm32"))]
-type BoxServiceFuture<E> = Pin<Box<dyn Future<Output = Result<Response<Body>, E>> + Send>>;
+#[cfg(any(not(target_arch = "wasm32"), feature = "worker"))]
+type ServiceFuture<E> = Pin<Box<dyn Future<Output = Result<Response<Body>, E>> + Send>>;
 
-#[cfg(target_arch = "wasm32")]
-type BoxServiceFuture<E> = Pin<Box<dyn Future<Output = Result<Response<Body>, E>>>>;
-
-#[cfg(all(target_arch = "wasm32", feature = "worker"))]
-type ServiceFuture<E> = send_wrapper::SendWrapper<BoxServiceFuture<E>>;
-
-#[cfg(not(all(target_arch = "wasm32", feature = "worker")))]
-type ServiceFuture<E> = BoxServiceFuture<E>;
-
-#[cfg(all(target_arch = "wasm32", feature = "worker"))]
-fn service_future<E>(future: BoxServiceFuture<E>) -> ServiceFuture<E> {
-    send_wrapper::SendWrapper::new(future)
-}
-
-#[cfg(not(all(target_arch = "wasm32", feature = "worker")))]
-fn service_future<E>(future: BoxServiceFuture<E>) -> ServiceFuture<E> {
-    future
-}
+#[cfg(all(target_arch = "wasm32", not(feature = "worker")))]
+type ServiceFuture<E> = Pin<Box<dyn Future<Output = Result<Response<Body>, E>>>>;
 
 /// Tower layer that verifies Clerk session JWTs and inserts a
 /// [`VerificationOutcome`](crate::core::VerificationOutcome) into request extensions. Valid bearer tokens (or
@@ -95,11 +84,11 @@ fn service_future<E>(future: BoxServiceFuture<E>) -> ServiceFuture<E> {
 ///
 /// # `worker` feature
 ///
-/// With the `worker` feature (server on wasm), the service future is wrapped
-/// in `SendWrapper` to satisfy Axum's `Send` bound. This assumes a
-/// single-threaded runtime such as Cloudflare Workers: the future must be
-/// polled and dropped on the thread that created it, and doing otherwise
-/// panics deterministically.
+/// With the `worker` feature (server on wasm), the service future is `Send`
+/// on the same terms as the Workers runtime itself: single-threaded, so the
+/// JWKS fetch's JavaScript futures can be marked `Send` without a runtime
+/// check. Building for threaded wasm (the `atomics` target feature) is
+/// rejected at compile time by the crates that make that claim.
 #[derive(Clone)]
 pub struct ClerkAuthLayer {
     inner: Arc<Inner>,
@@ -192,11 +181,11 @@ where
         let clone = self.inner.clone();
         let mut inner = std::mem::replace(&mut self.inner, clone);
 
-        service_future(Box::pin(async move {
+        Box::pin(async move {
             match verify_request(req, layer.inner.verifier.clone()).await {
                 VerifiedRequest::Forward(req) => inner.call(req).await,
                 VerifiedRequest::Unavailable(response) => Ok(response),
             }
-        }))
+        })
     }
 }
