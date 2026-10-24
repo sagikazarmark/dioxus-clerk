@@ -814,7 +814,6 @@ dependencies = [
  "jwk-simple",
  "jwt-simple",
  "reqwest",
- "send_wrapper",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
