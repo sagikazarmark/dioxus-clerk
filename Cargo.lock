@@ -2030,9 +2030,9 @@ dependencies = [
 
 [[package]]
 name = "jwk-simple"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7e34af3d7c02a0ab7de5fbfe6df96540f511d62537c361d683974a55596b131"
+checksum = "b7a071eca79dc7e3db2a8c9267d1fb227c4182df24013bc19272b2f944ed10a7"
 dependencies = [
  "async-trait",
  "base64ct",
@@ -2043,7 +2043,6 @@ dependencies = [
  "http-body",
  "http-body-util",
  "jwt-simple",
- "pkcs1",
  "reqwest",
  "send_wrapper",
  "serde",
@@ -3627,7 +3626,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
