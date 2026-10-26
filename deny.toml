@@ -21,6 +21,12 @@ allow = [
   "Unicode-3.0",
   "Zlib",
 ]
+exceptions = [
+  # The Mozilla root certificate bundle, pulled in through reqwest's rustls
+  # platform verifier. CDLA-Permissive-2.0 is a permissive licence for data,
+  # not code, so it is scoped to this crate rather than allowed globally.
+  { crate = "webpki-root-certs", allow = ["CDLA-Permissive-2.0"] },
+]
 
 [bans]
 multiple-versions = "warn"
