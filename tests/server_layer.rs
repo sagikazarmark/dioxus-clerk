@@ -18,8 +18,7 @@ use tower::{Layer, ServiceExt, service_fn};
 
 #[tokio::test]
 async fn v1_flat_organization_claims_remain_supported() {
-    use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
-    let (priv_pem, jwks_json) = test_keys();
+    let (_priv_pem, jwks_json) = test_keys();
     let issued_at = now() as i64;
     let not_before = issued_at;
     let expires_at = issued_at + 600;
@@ -35,14 +34,7 @@ async fn v1_flat_organization_claims_remain_supported() {
         "iat": issued_at,
         "nbf": not_before,
     });
-    let mut header = Header::new(Algorithm::RS256);
-    header.kid = Some("test-kid".into());
-    let token = encode(
-        &header,
-        &claims,
-        &EncodingKey::from_rsa_pem(priv_pem.as_bytes()).unwrap(),
-    )
-    .unwrap();
+    let token = signed_test_token_with_claims(claims, "test-kid", Some("JWT"));
 
     let server = start_jwks_mock(&jwks_json).await;
     let layer = layer_with_jwks_base_url(format!("{}/v1", server.uri()));
@@ -991,32 +983,52 @@ fn signed_test_token_with_claims(
     kid: &str,
     typ: Option<&str>,
 ) -> String {
-    use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
-    let (priv_pem, _jwks_json) = test_keys();
+    use rsa::pkcs1v15::SigningKey;
+    use rsa::pkcs8::DecodePrivateKey;
+    use rsa::sha2::Sha256;
+    use rsa::signature::{SignatureEncoding, Signer};
 
-    let mut header = Header::new(Algorithm::RS256);
-    header.kid = Some(kid.into());
-    header.typ = typ.map(String::from);
-    encode(
-        &header,
-        &claims,
-        &EncodingKey::from_rsa_pem(priv_pem.as_bytes()).unwrap(),
-    )
-    .unwrap()
+    let (priv_pem, _jwks_json) = test_keys();
+    let key = rsa::RsaPrivateKey::from_pkcs8_pem(&priv_pem).unwrap();
+    let signer = SigningKey::<Sha256>::new(key);
+
+    let mut header = serde_json::json!({ "alg": "RS256", "kid": kid });
+    if let Some(typ) = typ {
+        header["typ"] = serde_json::json!(typ);
+    }
+    assemble_jwt(&header, &claims, |input| signer.sign(input).to_vec())
 }
 
 fn signed_hs256_test_token() -> String {
-    use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
+    use hmac::{Hmac, KeyInit, Mac};
+    use sha2::Sha256;
 
-    let mut header = Header::new(Algorithm::HS256);
-    header.kid = Some("test-kid".into());
-    header.typ = Some("JWT".into());
-    encode(
-        &header,
-        &base_claims(),
-        &EncodingKey::from_secret(b"test-secret"),
-    )
-    .unwrap()
+    let header = serde_json::json!({ "alg": "HS256", "kid": "test-kid", "typ": "JWT" });
+    assemble_jwt(&header, &base_claims(), |input| {
+        let mut mac = Hmac::<Sha256>::new_from_slice(b"test-secret").unwrap();
+        mac.update(input);
+        mac.finalize().into_bytes().to_vec()
+    })
+}
+
+// Tokens are assembled by hand rather than through a JWT library because the
+// tests need headers no well-behaved signer emits (a missing `typ`, a
+// non-RS256 `alg`), and claim sets with registered claims deliberately absent.
+fn assemble_jwt(
+    header: &serde_json::Value,
+    claims: &serde_json::Value,
+    sign: impl FnOnce(&[u8]) -> Vec<u8>,
+) -> String {
+    use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
+
+    let encode = |bytes: &[u8]| Base64UrlSafeNoPadding::encode_to_string(bytes).unwrap();
+    let signing_input = format!(
+        "{}.{}",
+        encode(&serde_json::to_vec(header).unwrap()),
+        encode(&serde_json::to_vec(claims).unwrap()),
+    );
+    let signature = encode(&sign(signing_input.as_bytes()));
+    format!("{signing_input}.{signature}")
 }
 
 fn claims_with(

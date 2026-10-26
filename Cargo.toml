@@ -91,13 +91,12 @@ wasm-bindgen-test = "0.3"
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 # Serialized event types + converter so native tests can synthesize clicks.
 dioxus-html = { version = "0.7", default-features = false, features = ["serialize"] }
-# jsonwebtoken 10 gates its crypto backend behind the `rust_crypto` /
-# `aws_lc_rs` features and panics at runtime unless exactly one is enabled.
-# Its default (`use_pem`) selects neither, so pin the pure-Rust backend
-# explicitly; this crate mints RS256 test tokens with it and ships nothing
-# from it. Without this, token signing panics with "Could not automatically
-# determine the process-level CryptoProvider".
-jsonwebtoken = { version = "11", features = ["rust_crypto"] }
+# Sign hand-assembled test tokens (malformed headers, missing claims) that no
+# JWT library will emit. Not jsonwebtoken: its `rust_crypto` backend pulls in
+# p256/p384 0.13 and with them crypto-bigint 0.5 (RUSTSEC-2026-0387).
+hmac = "0.13"
+rsa = { version = "0.9", features = ["sha2"] }
+sha2 = "0.11"
 # Keep validation off transitive releases that require a newer Rust than this crate's MSRV.
 simple_asn1 = "=0.6.4"
 tempfile = "3"
