@@ -1,5 +1,6 @@
 //! Inject the clerk-js script tag once per page.
 
+use crate::script_urls::{FrontendApiRouting, clerk_js_url, clerk_ui_url};
 use std::cell::RefCell;
 use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::{JsCast, JsValue};
@@ -19,6 +20,14 @@ pub(crate) fn script_load_error() -> Option<String> {
     SCRIPT_LOAD_ERROR.with(|slot| slot.borrow().clone())
 }
 
+/// Forget a recorded script failure. Test support only: real pages clear it
+/// by re-injecting (see [`inject_script`]); a test harness that removes the
+/// tags itself would otherwise leave the error to fail the next provider's
+/// load fast.
+pub(crate) fn reset_script_load_error() {
+    SCRIPT_LOAD_ERROR.with(|slot| *slot.borrow_mut() = None);
+}
+
 /// Whether the `@clerk/ui` script tag from [`inject_script`] is in the document,
 /// i.e. this crate is loading the UI bundle and the load flow must wait for
 /// its constructor before calling `Clerk.load()`. False when a live
@@ -36,6 +45,16 @@ pub(crate) struct ScriptOptions {
     pub(crate) url: Option<String>,
     pub(crate) ui_url: Option<String>,
     pub(crate) nonce: Option<String>,
+    /// `proxyUrl` for clerk-js, carried on the clerk-js tag.
+    pub(crate) proxy_url: Option<String>,
+    /// Satellite `domain` for clerk-js, carried on the clerk-js tag.
+    pub(crate) domain: Option<String>,
+}
+
+impl ScriptOptions {
+    fn routing(&self) -> FrontendApiRouting<'_> {
+        FrontendApiRouting::new(self.proxy_url.as_deref(), self.domain.as_deref())
+    }
 }
 
 /// Inject the clerk-js and `@clerk/ui` script tags unless they were already
@@ -77,14 +96,28 @@ pub(crate) fn inject_script(publishable_key: &str, options: &ScriptOptions) -> b
 
     // Resolved through `script_urls`, the same functions `csp` derives its
     // `script-src` from, so what is injected is what the CSP sources allow.
-    let ui_url = crate::script_urls::clerk_ui_url(publishable_key, options.ui_url.as_deref());
-    let clerk_url = crate::script_urls::clerk_js_url(publishable_key, options.url.as_deref());
+    let routing = options.routing();
+    let ui_url = clerk_ui_url(publishable_key, options.ui_url.as_deref(), routing);
+    let clerk_url = clerk_js_url(publishable_key, options.url.as_deref(), routing);
+
+    // The clerk-js browser bundle constructs `window.Clerk` from these
+    // attributes the moment it runs, and its Frontend API client is fixed
+    // then: `proxyUrl` and `domain` passed later to `Clerk.load()` are never
+    // read. Leaving them off the tag silently sends every request to the
+    // key's own host, bypassing the proxy or satellite domain.
+    let mut clerk_attributes = vec![("data-clerk-publishable-key", publishable_key)];
+    if let Some(proxy_url) = routing.proxy_url {
+        clerk_attributes.push(("data-clerk-proxy-url", proxy_url));
+    }
+    if let Some(domain) = routing.domain {
+        clerk_attributes.push(("data-clerk-domain", domain));
+    }
 
     let ui_ok = inject_one(
         &doc,
         UI_SCRIPT_ID,
         &ui_url,
-        None,
+        &[],
         options.nonce.as_deref(),
         "@clerk/ui",
     );
@@ -92,7 +125,7 @@ pub(crate) fn inject_script(publishable_key: &str, options: &ScriptOptions) -> b
         &doc,
         SCRIPT_ID,
         &clerk_url,
-        Some(publishable_key),
+        &clerk_attributes,
         options.nonce.as_deref(),
         "clerk-js",
     );
@@ -100,13 +133,13 @@ pub(crate) fn inject_script(publishable_key: &str, options: &ScriptOptions) -> b
 }
 
 /// Create one script tag, wire its fail-fast error handler, and append it to
-/// `<head>`. `publishable_key` is set as `data-clerk-publishable-key` only on
-/// the clerk-js tag. Returns true on success.
+/// `<head>`. The `data-clerk-*` configuration `attributes` go on the clerk-js
+/// tag only. Returns true on success.
 fn inject_one(
     doc: &web_sys::Document,
     id: &str,
     url: &str,
-    publishable_key: Option<&str>,
+    attributes: &[(&str, &str)],
     nonce: Option<&str>,
     label: &str,
 ) -> bool {
@@ -119,8 +152,8 @@ fn inject_one(
     };
     script.set_id(id);
     script.set_src(url);
-    if let Some(key) = publishable_key {
-        script.set_attribute("data-clerk-publishable-key", key).ok();
+    for (name, value) in attributes {
+        script.set_attribute(name, value).ok();
     }
     if let Some(nonce) = nonce {
         script.set_attribute("nonce", nonce).ok();
@@ -188,8 +221,85 @@ mod tests {
         ScriptOptions {
             url: Some(UNREACHABLE_URL.into()),
             ui_url: Some(UNREACHABLE_UI_URL.into()),
-            nonce: None,
+            ..ScriptOptions::default()
         }
+    }
+
+    fn injected(id: &str) -> web_sys::Element {
+        window()
+            .unwrap()
+            .document()
+            .unwrap()
+            .get_element_by_id(id)
+            .expect("script tag was injected")
+    }
+
+    #[wasm_bindgen_test]
+    fn inject_script_carries_proxy_and_domain_on_the_clerk_js_tag() {
+        cleanup();
+
+        let options = ScriptOptions {
+            proxy_url: Some("https://clerk.invalid/__clerk".into()),
+            domain: Some("satellite.invalid".into()),
+            ..unreachable_options()
+        };
+        assert!(inject_script("pk_test_loader", &options));
+
+        // clerk-js reads these only from its own tag when it constructs
+        // `window.Clerk`; `Clerk.load()` options cannot reroute it later.
+        let clerk = injected(SCRIPT_ID);
+        assert_eq!(
+            clerk.get_attribute("data-clerk-proxy-url").as_deref(),
+            Some("https://clerk.invalid/__clerk")
+        );
+        assert_eq!(
+            clerk.get_attribute("data-clerk-domain").as_deref(),
+            Some("satellite.invalid")
+        );
+        let ui = injected(UI_SCRIPT_ID);
+        assert!(ui.get_attribute("data-clerk-proxy-url").is_none());
+        assert!(ui.get_attribute("data-clerk-domain").is_none());
+
+        cleanup();
+    }
+
+    #[wasm_bindgen_test]
+    fn inject_script_omits_unset_proxy_and_domain() {
+        cleanup();
+
+        let options = ScriptOptions {
+            proxy_url: Some(String::new()),
+            ..unreachable_options()
+        };
+        assert!(inject_script("pk_test_loader", &options));
+
+        let clerk = injected(SCRIPT_ID);
+        assert!(clerk.get_attribute("data-clerk-proxy-url").is_none());
+        assert!(clerk.get_attribute("data-clerk-domain").is_none());
+
+        cleanup();
+    }
+
+    #[wasm_bindgen_test]
+    fn inject_script_loads_the_bundles_through_the_proxy() {
+        cleanup();
+
+        let options = ScriptOptions {
+            proxy_url: Some("https://clerk.invalid/__clerk".into()),
+            ..ScriptOptions::default()
+        };
+        assert!(inject_script("pk_test_loader", &options));
+
+        assert_eq!(
+            injected(SCRIPT_ID).get_attribute("src").as_deref(),
+            Some("https://clerk.invalid/__clerk/npm/@clerk/clerk-js@6/dist/clerk.browser.js")
+        );
+        assert_eq!(
+            injected(UI_SCRIPT_ID).get_attribute("src").as_deref(),
+            Some("https://clerk.invalid/__clerk/npm/@clerk/ui@1/dist/ui.browser.js")
+        );
+
+        cleanup();
     }
 
     #[wasm_bindgen_test]

@@ -77,7 +77,11 @@ pub fn clear_clerk() {
     let key = JsValue::from_str("Clerk");
     let window = window();
     if let Some(document) = window.document() {
-        for id in ["__dioxus_clerk_js", "__clerk_initial_state"] {
+        for id in [
+            "__dioxus_clerk_js",
+            "__dioxus_clerk_ui",
+            "__clerk_initial_state",
+        ] {
             if let Some(script) = document.get_element_by_id(id) {
                 script.remove();
             }

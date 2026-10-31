@@ -411,6 +411,11 @@ ClerkProvider {
 }
 ```
 
+`proxy_url` and `domain` reroute both clerk-js's Frontend API requests and the
+injected bundles, as Clerk's own SDKs do. clerk-js reads them from its script
+tag when it starts, so if you load clerk-js yourself (`load_clerk_js: false`),
+put `data-clerk-proxy-url` / `data-clerk-domain` on your tag.
+
 When you send a Content-Security-Policy, `dioxus_clerk::csp::ClerkCsp` derives
 the sources Clerk needs from the publishable key, per directive, for you to
 merge into your own policy. It compiles for every target, so a native server
@@ -421,7 +426,8 @@ use dioxus_clerk::csp::ClerkCsp;
 
 let clerk = ClerkCsp::from_publishable_key(&pk)
     .expect("a Clerk publishable key")
-    // Mirror the provider's overrides, if any.
+    // Mirror the provider's `clerk_js_url`, `clerk_ui_url`, `proxy_url`, and
+    // `domain`, when set.
     .with_clerk_js_url("https://cdn.example.com/clerk.browser.js");
 
 for (directive, sources) in clerk.directives() {

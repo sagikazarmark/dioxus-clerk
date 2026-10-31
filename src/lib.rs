@@ -123,8 +123,10 @@ pub use serde_json;
 ///
 /// Hidden test-support hook: a mock whose load promise never settles (e.g. a
 /// pending-load fixture) leaves the in-flight flag set, which would make the
-/// next test's provider block in the load-in-flight wait loop. Real clerk-js
-/// always settles, so this never matters outside tests.
+/// next test's provider block in the load-in-flight wait loop. Likewise a
+/// script that failed to load leaves its error recorded, which would fail the
+/// next test's provider fast. Real clerk-js always settles, and real pages
+/// retry by re-injecting, so this never matters outside tests.
 ///
 /// Not part of the public API. The `__` prefix and `#[doc(hidden)]` mark it as
 /// an internal hook the crate's own (external) wasm integration tests reach;
@@ -134,6 +136,7 @@ pub use serde_json;
 #[cfg(clerk_client)]
 pub fn __reset_load_state() {
     crate::bridge::reset_load_state();
+    crate::loader::reset_script_load_error();
 }
 
 mod actions;

@@ -88,10 +88,20 @@ pub fn ClerkProvider(
     /// Application create-organization URL forwarded to `Clerk.load(...)`.
     #[props(into)]
     create_organization_url: Option<String>,
-    /// Clerk proxy URL for reverse-proxy deployments.
+    /// Clerk proxy URL for reverse-proxy deployments, absolute
+    /// (`https://example.com/__clerk`) or same-origin (`/__clerk`).
+    ///
+    /// Frontend API requests and the injected Clerk bundles both go through
+    /// it. clerk-js reads it from its script tag, so with `load_clerk_js:
+    /// false` your own tag must carry `data-clerk-proxy-url`.
     #[props(into)]
     proxy_url: Option<String>,
     /// Clerk satellite-domain setting when the app is a satellite application.
+    ///
+    /// With a production key, Frontend API requests and the injected Clerk
+    /// bundles go to `clerk.{domain}`. clerk-js reads it from its script tag,
+    /// so with `load_clerk_js: false` your own tag must carry
+    /// `data-clerk-domain`.
     #[props(into)]
     domain: Option<String>,
     /// Whether Clerk should treat this app as a satellite application.
@@ -127,7 +137,10 @@ pub fn ClerkProvider(
     #[props(into)]
     clerk_ui_url: Option<String>,
     /// Whether `ClerkProvider` should inject clerk-js. Disable when the app
-    /// loads clerk-js externally.
+    /// loads clerk-js externally; that script tag must then carry
+    /// `data-clerk-publishable-key`, plus `data-clerk-proxy-url` /
+    /// `data-clerk-domain` when used, because clerk-js reads its
+    /// configuration from the tag before `Clerk.load()` runs.
     #[props(default = true)]
     load_clerk_js: bool,
     /// Optional router push callback forwarded to `Clerk.load(...)` as
@@ -194,6 +207,23 @@ pub fn ClerkProvider(
     let pending = use_signal(Vec::new);
 
     #[cfg(clerk_client)]
+    let (script_proxy_url, script_domain) = {
+        // Read back from the merged options rather than the props, so a proxy
+        // or domain set through the raw `options` builder reaches the script
+        // tag too, with the same explicit-prop-wins precedence.
+        let string_option = |key: &str| {
+            options
+                .get(key)
+                .and_then(serde_json::Value::as_str)
+                .map(str::to_owned)
+        };
+        (
+            string_option(crate::options::keys::PROXY_URL),
+            string_option(crate::options::keys::DOMAIN),
+        )
+    };
+
+    #[cfg(clerk_client)]
     crate::lifecycle::use_drive_lifecycle(
         crate::lifecycle::ClerkLifecycleSignals { auth, load_error },
         startup.publishable_key.clone(),
@@ -208,6 +238,8 @@ pub fn ClerkProvider(
                 url: clerk_js_url,
                 ui_url: clerk_ui_url,
                 nonce: script_nonce,
+                proxy_url: script_proxy_url,
+                domain: script_domain,
             },
         },
     );

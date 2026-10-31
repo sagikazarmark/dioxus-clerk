@@ -115,27 +115,48 @@ fn script_src_allows_every_bundle_the_loader_would_inject() {
         Some("//static.example.com/clerk.js"),
         Some("/assets/clerk.js"),
     ];
+    let routings = [
+        (None, None),
+        (Some("https://proxy.example.com/__clerk"), None),
+        (Some("http://proxy.example.com:8080/__clerk"), None),
+        (Some("/__clerk"), None),
+        (None, Some("satellite.dev")),
+        (None, Some("https://satellite.dev")),
+        (Some("/__clerk"), Some("satellite.dev")),
+    ];
 
     for key in [DEV_KEY, LIVE_KEY] {
-        for js in overrides {
-            for ui in overrides {
-                let mut clerk = csp(key);
-                if let Some(url) = js {
-                    clerk = clerk.with_clerk_js_url(url);
-                }
-                if let Some(url) = ui {
-                    clerk = clerk.with_clerk_ui_url(url);
-                }
+        for (proxy_url, domain) in routings {
+            for js in overrides {
+                for ui in overrides {
+                    let mut clerk = csp(key);
+                    if let Some(url) = js {
+                        clerk = clerk.with_clerk_js_url(url);
+                    }
+                    if let Some(url) = ui {
+                        clerk = clerk.with_clerk_ui_url(url);
+                    }
+                    if let Some(url) = proxy_url {
+                        clerk = clerk.with_proxy_url(url);
+                    }
+                    if let Some(domain) = domain {
+                        clerk = clerk.with_domain(domain);
+                    }
 
-                for injected in [
-                    script_urls::clerk_js_url(key, js),
-                    script_urls::clerk_ui_url(key, ui),
-                ] {
-                    assert!(
-                        allows(clerk.script_src(), &injected),
-                        "{injected} (key {key}) is not allowed by {:?}",
-                        clerk.script_src()
-                    );
+                    // What `ScriptOptions` hands the loader for the same
+                    // provider settings.
+                    let routing = FrontendApiRouting::new(proxy_url, domain);
+                    for injected in [
+                        script_urls::clerk_js_url(key, js, routing),
+                        script_urls::clerk_ui_url(key, ui, routing),
+                    ] {
+                        assert!(
+                            allows(clerk.script_src(), &injected),
+                            "{injected} (key {key}, proxy {proxy_url:?}, domain {domain:?}) \
+                             is not allowed by {:?}",
+                            clerk.script_src()
+                        );
+                    }
                 }
             }
         }
@@ -180,25 +201,26 @@ fn unusable_override_urls_contribute_nothing() {
 }
 
 #[test]
-fn a_proxy_replaces_the_frontend_api_host_in_connect_src() {
+fn a_proxy_replaces_the_frontend_api_host() {
     let clerk = csp(LIVE_KEY).with_proxy_url("https://example.com/__clerk");
 
-    assert_eq!(clerk.connect_src()[0], "https://example.com");
-    assert!(
-        !clerk
-            .connect_src()
-            .contains(&"https://clerk.example.com".to_owned())
+    // clerk-js talks to the proxy and the provider loads the bundles through
+    // it, so the key's own host is needed by neither.
+    assert_eq!(
+        clerk.connect_src(),
+        strings(&[
+            "https://example.com",
+            "https://*.protect.clerk.com:*",
+            "https://img.clerk.com",
+        ])
     );
-    // The loader still fetches the bundles from the key's host.
-    assert!(
-        clerk
-            .script_src()
-            .contains(&"https://clerk.example.com".to_owned())
-    );
-    assert!(
-        clerk
-            .script_src()
-            .contains(&"https://example.com".to_owned())
+    assert_eq!(
+        clerk.script_src(),
+        strings(&[
+            "https://example.com",
+            "https://challenges.cloudflare.com",
+            "https://*.protect.clerk.com",
+        ])
     );
 }
 
@@ -207,38 +229,84 @@ fn a_same_origin_proxy_contributes_self() {
     let clerk = csp(LIVE_KEY).with_proxy_url("/__clerk");
 
     assert_eq!(clerk.connect_src()[0], "'self'");
+    assert_eq!(clerk.script_src()[0], "'self'");
+    assert!(
+        !clerk
+            .script_src()
+            .contains(&"https://clerk.example.com".to_owned())
+    );
 }
 
 #[test]
-fn a_production_satellite_talks_to_its_own_frontend_api() {
+fn a_proxy_clerk_js_rejects_contributes_nothing() {
+    // Neither absolute nor rooted at `/`: clerk-js throws at startup.
+    let clerk = csp(LIVE_KEY).with_proxy_url("proxy.example.com/__clerk");
+
+    assert_eq!(clerk.connect_src()[0], "https://*.protect.clerk.com:*");
+}
+
+#[test]
+fn a_production_domain_moves_the_frontend_api() {
     for domain in [
         "satellite.dev",
         "https://satellite.dev",
         "https://satellite.dev/",
+        "clerk.satellite.dev",
     ] {
-        let clerk = csp(LIVE_KEY).with_satellite_domain(domain);
+        let clerk = csp(LIVE_KEY).with_domain(domain);
         assert_eq!(
             clerk.connect_src()[0],
             "https://clerk.satellite.dev",
+            "{domain}"
+        );
+        assert_eq!(
+            clerk.script_src()[0],
+            "https://clerk.satellite.dev",
+            "{domain}"
+        );
+        assert!(
+            !clerk
+                .script_src()
+                .contains(&"https://clerk.example.com".to_owned()),
             "{domain}"
         );
     }
 }
 
 #[test]
-fn a_development_satellite_keeps_the_keys_host() {
-    let clerk = csp(DEV_KEY).with_satellite_domain("satellite.dev");
+fn a_domain_that_would_break_out_of_its_directive_contributes_nothing() {
+    let clerk = csp(LIVE_KEY).with_domain("satellite.dev; script-src *");
 
-    assert_eq!(clerk.connect_src()[0], "https://foo.clerk.accounts.dev");
+    assert!(
+        clerk
+            .directives()
+            .flat_map(|(_, sources)| sources)
+            .all(|source| !source.contains(';') && !source.contains(' ')),
+        "{:?}",
+        clerk.directives().collect::<Vec<_>>()
+    );
 }
 
 #[test]
-fn a_proxy_takes_precedence_over_a_satellite_domain() {
+fn a_development_key_ignores_the_domain() {
+    let clerk = csp(DEV_KEY).with_domain("satellite.dev");
+
+    assert_eq!(clerk.connect_src()[0], "https://foo.clerk.accounts.dev");
+    assert_eq!(clerk.script_src()[0], "https://foo.clerk.accounts.dev");
+}
+
+#[test]
+fn a_proxy_takes_precedence_over_a_domain() {
     let clerk = csp(LIVE_KEY)
-        .with_satellite_domain("satellite.dev")
+        .with_domain("satellite.dev")
         .with_proxy_url("https://proxy.example.com/__clerk");
 
     assert_eq!(clerk.connect_src()[0], "https://proxy.example.com");
+    assert!(
+        !clerk
+            .script_src()
+            .contains(&"https://clerk.satellite.dev".to_owned())
+    );
 }
 
 #[test]
