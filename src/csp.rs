@@ -11,9 +11,9 @@
 //! It is deliberately not a header builder: the policy is the app's. It never
 //! contributes `default-src`, `frame-ancestors`, or `form-action`, and adds
 //! `'self'` only where Clerk itself requires it (`worker-src`) or where the
-//! crate loads something same-origin (a relative override URL). The app adds
-//! its own needs, such as `'self'`, `'wasm-unsafe-eval'` to instantiate the
-//! wasm module, and any hashes or nonces.
+//! crate loads something same-origin (a relative override or proxy URL). The
+//! app adds its own needs, such as `'self'`, `'wasm-unsafe-eval'` to
+//! instantiate the wasm module, and any hashes or nonces.
 //!
 //! The module is pure and has no feature gate, so a native server, a
 //! Cloudflare Worker, and the browser build can all use it.
@@ -58,8 +58,8 @@
 //! ```
 //!
 //! When `ClerkProvider` is configured with `clerk_js_url`, `clerk_ui_url`,
-//! `proxy_url`, or a satellite `domain`, mirror those settings on [`ClerkCsp`]
-//! so its sources follow:
+//! `proxy_url`, or `domain`, mirror those settings on [`ClerkCsp`] so its
+//! sources follow:
 //!
 //! ```
 //! # use dioxus_clerk::csp::ClerkCsp;
@@ -76,9 +76,13 @@
 //! `style-src 'unsafe-inline'` is unavoidable today: Clerk's components style
 //! themselves with runtime CSS-in-JS.
 //!
+//! A production instance served from a `*.vercel.app` host with no proxy or
+//! domain set is proxied by clerk-js automatically, through `/__clerk` on the
+//! page's own origin; the app's own `'self'` in `connect-src` covers that.
+//!
 //! [Clerk's CSP guide]: https://clerk.com/docs/guides/secure/best-practices/csp-headers
 
-use crate::script_urls;
+use crate::script_urls::{self, FrontendApiRouting};
 
 const SELF: &str = "'self'";
 /// Cloudflare Turnstile, Clerk's bot protection; it loads a script and renders
@@ -121,7 +125,7 @@ struct Config {
     clerk_js_url: Option<String>,
     clerk_ui_url: Option<String>,
     proxy_url: Option<String>,
-    satellite_domain: Option<String>,
+    domain: Option<String>,
     telemetry: bool,
 }
 
@@ -158,7 +162,7 @@ impl ClerkCsp {
             clerk_js_url: None,
             clerk_ui_url: None,
             proxy_url: None,
-            satellite_domain: None,
+            domain: None,
             telemetry: development,
         };
         Some(Self::from_config(config))
@@ -168,8 +172,8 @@ impl ClerkCsp {
     /// clerk-js bundle.
     ///
     /// The bundle's origin is added to `script-src`; a relative URL adds
-    /// `'self'`. The Frontend API host stays in `script-src` regardless, as
-    /// Clerk requires it there.
+    /// `'self'`. The Frontend API (or its proxy) stays in `script-src`
+    /// regardless, as Clerk requires it there.
     pub fn with_clerk_js_url(mut self, url: impl Into<String>) -> Self {
         self.config.clerk_js_url = Some(url.into());
         self.rebuilt()
@@ -185,25 +189,28 @@ impl ClerkCsp {
     /// Mirror `ClerkProvider`'s `proxy_url` when Frontend API traffic goes
     /// through a reverse proxy.
     ///
-    /// clerk-js then talks to the proxy instead of the Frontend API host, so
-    /// the proxy's origin replaces the host in `connect-src` (and joins it in
-    /// `script-src`). A same-origin proxy such as `/__clerk` contributes
-    /// `'self'`. Takes precedence over
-    /// [`with_satellite_domain`](Self::with_satellite_domain), as in clerk-js.
+    /// clerk-js then talks to the proxy instead of the Frontend API host, and
+    /// the provider loads the Clerk bundles through it, so the proxy's origin
+    /// replaces the host in `connect-src` and `script-src`. A same-origin
+    /// proxy such as `/__clerk` contributes `'self'`. A proxy URL that is
+    /// neither absolute `http(s)` nor rooted at `/` is one clerk-js refuses
+    /// to start with, and contributes nothing. Takes precedence over
+    /// [`with_domain`](Self::with_domain), as in clerk-js.
     pub fn with_proxy_url(mut self, url: impl Into<String>) -> Self {
         self.config.proxy_url = Some(url.into());
         self.rebuilt()
     }
 
-    /// Mirror `ClerkProvider`'s `domain` on a satellite application
-    /// (`is_satellite: true`).
+    /// Mirror `ClerkProvider`'s `domain`, as set on a satellite application.
     ///
-    /// A production satellite talks to the Frontend API at `clerk.{domain}`
-    /// instead of the host in the key; a development satellite keeps using the
-    /// key's host, so this has no effect with a `pk_test_` key. Accepts a bare
-    /// host (`satellite.example.com`) or a URL.
-    pub fn with_satellite_domain(mut self, domain: impl Into<String>) -> Self {
-        self.config.satellite_domain = Some(domain.into());
+    /// With a production key, clerk-js talks to the Frontend API at
+    /// `clerk.{domain}` and the provider loads the Clerk bundles from there,
+    /// so that host replaces the key's in `connect-src` and `script-src`.
+    /// Development instances keep using the key's host, so this has no effect
+    /// with a `pk_test_` key. Accepts a bare host (`satellite.example.com`) or
+    /// a URL.
+    pub fn with_domain(mut self, domain: impl Into<String>) -> Self {
+        self.config.domain = Some(domain.into());
         self.rebuilt()
     }
 
@@ -224,14 +231,15 @@ impl ClerkCsp {
     /// The Frontend API host decoded from the publishable key, e.g.
     /// `clerk.example.com`.
     ///
-    /// This is the key's host even when a proxy or satellite domain is set:
-    /// it is where this crate loads the Clerk bundles from by default.
+    /// This is the key's host even when a proxy or domain is set, which is
+    /// what reroutes clerk-js away from it.
     pub fn frontend_api_host(&self) -> &str {
         &self.config.frontend_api_host
     }
 
-    /// Sources for `script-src`: the Frontend API host, the origins the Clerk
-    /// bundles are loaded from, and Clerk's bot- and fraud-protection hosts.
+    /// Sources for `script-src`: the Frontend API (or its proxy), the origins
+    /// the Clerk bundles are loaded from, and Clerk's bot- and
+    /// fraud-protection hosts.
     pub fn script_src(&self) -> &[String] {
         &self.sources.script_src
     }
@@ -295,20 +303,27 @@ impl ClerkCsp {
 
 impl Sources {
     fn for_config(config: &Config) -> Self {
-        let key_host = format!("https://{}", config.frontend_api_host);
         let frontend_api = config.frontend_api_source();
 
         let mut script_src = Vec::new();
-        // Clerk's guide requires the Frontend API host in `script-src` even
-        // when both bundles are self-hosted, and it is where they load from by
-        // default.
-        push(&mut script_src, key_host);
+        // Clerk's guide requires the Frontend API in `script-src` even when
+        // both bundles are self-hosted.
         push_opt(&mut script_src, frontend_api.clone());
         // Resolved through the same functions the loader injects with, so a
-        // change to the default URLs cannot leave these sources behind.
+        // change to the default URLs, or to how a proxy or domain moves them,
+        // cannot leave these sources behind.
+        let routing = config.routing();
         let bundles = [
-            script_urls::clerk_js_url(&config.publishable_key, config.clerk_js_url.as_deref()),
-            script_urls::clerk_ui_url(&config.publishable_key, config.clerk_ui_url.as_deref()),
+            script_urls::clerk_js_url(
+                &config.publishable_key,
+                config.clerk_js_url.as_deref(),
+                routing,
+            ),
+            script_urls::clerk_ui_url(
+                &config.publishable_key,
+                config.clerk_ui_url.as_deref(),
+                routing,
+            ),
         ];
         for bundle in &bundles {
             push_opt(&mut script_src, url_source(bundle));
@@ -340,23 +355,27 @@ impl Sources {
 }
 
 impl Config {
+    fn routing(&self) -> FrontendApiRouting<'_> {
+        FrontendApiRouting::new(self.proxy_url.as_deref(), self.domain.as_deref())
+    }
+
     /// The source for wherever clerk-js sends Frontend API requests, following
-    /// clerk-js's own precedence (`parsePublishableKey` in `@clerk/shared`): a
-    /// proxy wins, then a production satellite's `clerk.{domain}`, then the
-    /// key's host. `None` only when an override is unusable, in which case
-    /// clerk-js cannot reach the Frontend API either.
+    /// the precedence of its Frontend API client: a proxy wins, then (for a
+    /// production key) `clerk.{domain}`, then the key's host. `None` only when
+    /// a setting is unusable, in which case clerk-js cannot reach the Frontend
+    /// API either.
     fn frontend_api_source(&self) -> Option<String> {
-        if let Some(proxy) = &self.proxy_url {
-            return url_source(proxy);
+        let routing = self.routing();
+        if let Some(proxy) = routing.proxy_url {
+            // clerk-js throws on any other shape rather than guessing.
+            let valid = proxy.starts_with('/')
+                || proxy.starts_with("https://")
+                || proxy.starts_with("http://");
+            return valid.then(|| url_source(proxy)).flatten();
         }
-        if let Some(domain) = self
-            .satellite_domain
-            .as_deref()
-            .filter(|_| !self.development)
-        {
-            let domain = domain.trim();
-            let host = domain.split_once("://").map_or(domain, |(_, rest)| rest);
-            return authority(host).map(|host| format!("https://clerk.{host}"));
+        if let Some(domain) = routing.domain.filter(|_| !self.development) {
+            let host = script_urls::domain_frontend_api_host(domain);
+            return authority(&host).map(|host| format!("https://{host}"));
         }
         Some(format!("https://{}", self.frontend_api_host))
     }

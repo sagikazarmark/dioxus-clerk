@@ -430,9 +430,11 @@ option_setters!(ClerkOptions {
     string organization_profile_url / maybe_organization_profile_url => keys::ORGANIZATION_PROFILE_URL;
     /// Set the application create-organization URL.
     string create_organization_url / maybe_create_organization_url => keys::CREATE_ORGANIZATION_URL;
-    /// Set Clerk's reverse-proxy URL.
+    /// Set Clerk's reverse-proxy URL. `ClerkProvider` also carries it on the
+    /// injected clerk-js script tag, the only place clerk-js reads it from.
     string proxy_url / maybe_proxy_url => keys::PROXY_URL;
-    /// Set Clerk's satellite domain.
+    /// Set Clerk's satellite domain. `ClerkProvider` also carries it on the
+    /// injected clerk-js script tag, the only place clerk-js reads it from.
     string domain / maybe_domain => keys::DOMAIN;
     /// Set whether Clerk should treat this app as a satellite application.
     bool is_satellite / maybe_is_satellite => keys::IS_SATELLITE;

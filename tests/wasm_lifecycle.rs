@@ -175,6 +175,47 @@ async fn clerk_provider_reports_missing_publishable_key_without_external_clerk()
 }
 
 #[wasm_bindgen_test(async)]
+async fn clerk_provider_puts_proxy_and_domain_on_the_clerk_js_tag() {
+    wasm_support::clear_clerk();
+    reset_provider_errors();
+
+    let mut dom = VirtualDom::new(ProviderRoutingApp);
+    dom.rebuild_in_place();
+    dom.render_immediate(&mut NoOpMutations);
+
+    let document = wasm_support::window().document().unwrap();
+    let tag = || document.get_element_by_id("__dioxus_clerk_js");
+    assert!(
+        wasm_support::settle_until(&mut dom, || tag().is_some()).await,
+        "ClerkProvider did not inject clerk-js"
+    );
+
+    // clerk-js builds its Frontend API client from these attributes when the
+    // bundle runs; `Clerk.load()` options arrive too late to reroute it.
+    let tag = tag().unwrap();
+    assert_eq!(
+        tag.get_attribute("data-clerk-proxy-url").as_deref(),
+        Some("https://clerk.invalid/__clerk")
+    );
+    // Set through the raw options builder rather than a prop.
+    assert_eq!(
+        tag.get_attribute("data-clerk-domain").as_deref(),
+        Some("satellite.invalid")
+    );
+
+    // Let the unloadable script fail before cleaning up, so its error event
+    // cannot land in the next test.
+    assert!(
+        wasm_support::settle_until(&mut dom, || PROVIDER_ERRORS
+            .with(|errors| errors.borrow().iter().any(|e| e.contains("failed to load"))))
+        .await,
+        "the unloadable clerk-js script did not report its failure"
+    );
+    drop(dom);
+    wasm_support::clear_clerk();
+}
+
+#[wasm_bindgen_test(async)]
 async fn redirect_to_sign_in_does_not_watch_auth_after_loaded() {
     wasm_support::clear_clerk();
     let clerk = wasm_support::install_clerk_mock(true);
@@ -839,6 +880,21 @@ fn ProviderLoadOptionsApp() -> Element {
                 "afterSignInUrl": "/raw-dashboard",
             }),
             ProviderAuthProbe {}
+        }
+    }
+}
+
+#[component]
+fn ProviderRoutingApp() -> Element {
+    rsx! {
+        dioxus_clerk::ClerkProvider {
+            publishable_key: Some("pk_test_routing".to_string()),
+            proxy_url: "https://clerk.invalid/__clerk",
+            options: dioxus_clerk::ClerkOptions::new().domain("satellite.invalid"),
+            // Unloadable, so the harness never runs real clerk-js.
+            clerk_js_url: "https://clerk.invalid/clerk.browser.js",
+            clerk_ui_url: "https://clerk.invalid/ui.browser.js",
+            ProviderErrorProbe {}
         }
     }
 }
