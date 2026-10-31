@@ -411,6 +411,30 @@ ClerkProvider {
 }
 ```
 
+When you send a Content-Security-Policy, `dioxus_clerk::csp::ClerkCsp` derives
+the sources Clerk needs from the publishable key, per directive, for you to
+merge into your own policy. It compiles for every target, so a native server
+or a Cloudflare Worker can build the header:
+
+```rust
+use dioxus_clerk::csp::ClerkCsp;
+
+let clerk = ClerkCsp::from_publishable_key(&pk)
+    .expect("a Clerk publishable key")
+    // Mirror the provider's overrides, if any.
+    .with_clerk_js_url("https://cdn.example.com/clerk.browser.js");
+
+for (directive, sources) in clerk.directives() {
+    // Merge `sources` into your policy's `directive`.
+}
+```
+
+It contributes sources only. `'self'`, `'wasm-unsafe-eval'`, and anything else
+your app needs stay yours to add. Clerk's `style-src 'unsafe-inline'` is there
+because its components use runtime CSS-in-JS. The [`csp` module
+docs](https://docs.rs/dioxus-clerk/latest/dioxus_clerk/csp/) show a complete
+merge.
+
 ### Loading and failure UI
 
 ```rust

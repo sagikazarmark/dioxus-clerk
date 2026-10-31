@@ -3,11 +3,9 @@
 //! clerk-js is served from the instance's Frontend API host so the script and
 //! the backend it talks to stay version-coordinated (matching Clerk's own
 //! loaders). The host is encoded in the publishable key, so the default script
-//! URL can be derived from it without extra configuration.
-//!
-//! Compiled on the browser client (where the loader uses it) and under `test`
-//! (so the pure decoding logic is covered by host `cargo test`, not only the
-//! CI-only wasm suite).
+//! URL can be derived from it without extra configuration. The same host is
+//! the core of the CSP sources in [`crate::csp`], which servers build without
+//! ever running the browser loader, so this compiles on every target.
 
 /// The Frontend API host encoded in a Clerk publishable key.
 ///

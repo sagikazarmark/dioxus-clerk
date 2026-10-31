@@ -5,57 +5,8 @@ use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{HtmlScriptElement, window};
 
-/// Major clerk-js version this crate targets. The default script URL pins the
-/// major so patch/minor updates flow in without a breaking jump.
-const CLERK_JS_MAJOR: &str = "6";
-/// Major `@clerk/ui` version this crate targets. clerk-js 6 no longer bundles
-/// UI components; they ship in the separately-versioned `@clerk/ui` package
-/// (`Clerk.uiVersion`), which must be loaded alongside clerk-js and handed to
-/// `Clerk.load({ ui: { ClerkUI } })`.
-const CLERK_UI_MAJOR: &str = "1";
 const SCRIPT_ID: &str = "__dioxus_clerk_js";
-
-/// Fallback clerk-js CDN, used only when the publishable key cannot be decoded
-/// into a Frontend API host. Derived from [`CLERK_JS_MAJOR`] so it can't drift
-/// from the Frontend-API-hosted URL. The preferred source is the instance's own
-/// Frontend API host (see [`default_script_url`]).
-fn fallback_cdn_url() -> String {
-    format!("https://cdn.jsdelivr.net/npm/@clerk/clerk-js@{CLERK_JS_MAJOR}/dist/clerk.browser.js")
-}
-
-/// Fallback `@clerk/ui` CDN (mirrors [`fallback_cdn_url`]), derived from
-/// [`CLERK_UI_MAJOR`].
-fn fallback_ui_url() -> String {
-    format!("https://cdn.jsdelivr.net/npm/@clerk/ui@{CLERK_UI_MAJOR}/dist/ui.browser.js")
-}
 const UI_SCRIPT_ID: &str = "__dioxus_clerk_ui";
-
-/// The clerk-js script URL to inject for a publishable key.
-///
-/// Derives the instance's Frontend API host from the key and serves clerk-js
-/// from it, matching Clerk's own loaders, so the script stays version-matched
-/// with the backend it calls. Falls back to a pinned public CDN only when the
-/// key cannot be decoded.
-fn default_script_url(publishable_key: &str) -> String {
-    match crate::publishable_key::frontend_api_host(publishable_key) {
-        Some(host) => {
-            format!("https://{host}/npm/@clerk/clerk-js@{CLERK_JS_MAJOR}/dist/clerk.browser.js")
-        }
-        None => fallback_cdn_url(),
-    }
-}
-
-/// The `@clerk/ui` script URL to inject for a publishable key.
-///
-/// Served from the same Frontend API host as clerk-js (see
-/// [`default_script_url`]) so the two bundles stay version-matched, with the
-/// same pinned-public-CDN fallback when the key cannot be decoded.
-fn default_ui_url(publishable_key: &str) -> String {
-    match crate::publishable_key::frontend_api_host(publishable_key) {
-        Some(host) => format!("https://{host}/npm/@clerk/ui@{CLERK_UI_MAJOR}/dist/ui.browser.js"),
-        None => fallback_ui_url(),
-    }
-}
 
 thread_local! {
     /// Set by the injected script's `error` event so the load loop can fail
@@ -124,14 +75,10 @@ pub(crate) fn inject_script(publishable_key: &str, options: &ScriptOptions) -> b
         return false;
     }
 
-    let ui_url = options
-        .ui_url
-        .clone()
-        .unwrap_or_else(|| default_ui_url(publishable_key));
-    let clerk_url = options
-        .url
-        .clone()
-        .unwrap_or_else(|| default_script_url(publishable_key));
+    // Resolved through `script_urls`, the same functions `csp` derives its
+    // `script-src` from, so what is injected is what the CSP sources allow.
+    let ui_url = crate::script_urls::clerk_ui_url(publishable_key, options.ui_url.as_deref());
+    let clerk_url = crate::script_urls::clerk_js_url(publishable_key, options.url.as_deref());
 
     let ui_ok = inject_one(
         &doc,
