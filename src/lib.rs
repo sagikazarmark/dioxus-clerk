@@ -61,6 +61,7 @@
 
 pub mod components;
 pub mod core;
+pub mod csp;
 pub mod hooks;
 pub mod options;
 pub mod prelude;
@@ -148,11 +149,11 @@ mod lifecycle;
 #[cfg(clerk_client)]
 mod loader;
 mod reverification;
-// Pure publishable-key decoding for the client loader. Compiled under `test`
-// too so its logic is covered by host `cargo test`, not only the CI-only wasm
-// suite.
-#[cfg(any(clerk_client, test))]
+// Pure publishable-key decoding and script URL resolution, compiled on every
+// target: the browser loader injects these URLs and `csp` (native servers and
+// Workers included) has to allow them.
 mod publishable_key;
+mod script_urls;
 #[cfg(clerk_client)]
 mod ssr_document;
 mod startup;
